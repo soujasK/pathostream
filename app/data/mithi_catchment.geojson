@@ -1,0 +1,151 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "catchment_id": "mithi-river-mumbai",
+        "name": "Mithi River corridor (Vihar Lake to Mahim Creek) -- SIMPLIFIED, illustrative",
+        "source_note": "Simplified buffered corridor around a manually-digitized centerline through published waypoints (Vihar Lake, Powai, Saki Naka, Kurla, Bandra Kurla Complex, Vakola/Kalina, Dharavi, Mahim Creek). NOT a surveyed hydrological catchment boundary -- replace with an official BMC/MPCB/CWC shapefile before any real use.",
+        "river_length_km": 17.84,
+        "official_catchment_area_ha": 7295,
+        "station_flow_order": [
+          "STN-POWAI",
+          "STN-SAKINAKA",
+          "STN-KURLA",
+          "STN-BKC",
+          "STN-DHARAVI",
+          "STN-MAHIM"
+        ],
+        "station_flow_order_note": "Upstream-to-downstream order of the demo monitoring stations (simulator/stream_generator.py), matching the real Mithi River flow direction per this feature's own waypoint list above (Vihar Lake/Powai down to Mahim Creek). Used by app/core/propagation_engine.py for downstream contamination-arrival forecasting. A real deployment would derive this from hydrological flow-direction analysis (DEM/flow accumulation) against actual gauge locations, not a hand-authored list."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.8655443093755,
+              19.055140648113543
+            ],
+            [
+              72.86076718255734,
+              19.037702096662194
+            ],
+            [
+              72.85578231367249,
+              19.032485017898594
+            ],
+            [
+              72.83883628674285,
+              19.029056559479987
+            ],
+            [
+              72.8333435976453,
+              19.031015396467946
+            ],
+            [
+              72.82942286769583,
+              19.035332172178002
+            ],
+            [
+              72.82805902014653,
+              19.0398113031762
+            ],
+            [
+              72.82890864814625,
+              19.04558060193166
+            ],
+            [
+              72.8333227240568,
+              19.050970656246122
+            ],
+            [
+              72.84027155122986,
+              19.053291957078596
+            ],
+            [
+              72.84746318773267,
+              19.077283488983852
+            ],
+            [
+              72.85103725770706,
+              19.080413726727166
+            ],
+            [
+              72.85554600262954,
+              19.08191158644542
+            ],
+            [
+              72.86723710299412,
+              19.079564407240916
+            ],
+            [
+              72.87173033027199,
+              19.08136781138645
+            ],
+            [
+              72.87582754556226,
+              19.109244942871253
+            ],
+            [
+              72.87820062677532,
+              19.114832251246266
+            ],
+            [
+              72.8963580818664,
+              19.12598483403499
+            ],
+            [
+              72.90256469714497,
+              19.142062207811218
+            ],
+            [
+              72.90636003539733,
+              19.146489631827272
+            ],
+            [
+              72.91296845835787,
+              19.148695419131467
+            ],
+            [
+              72.91968863100139,
+              19.146858021162025
+            ],
+            [
+              72.92468265895234,
+              19.140499351941443
+            ],
+            [
+              72.92450919771305,
+              19.132415856371455
+            ],
+            [
+              72.91543799988557,
+              19.110188916532636
+            ],
+            [
+              72.89870731970373,
+              19.099868748252344
+            ],
+            [
+              72.89298225997955,
+              19.066782635317935
+            ],
+            [
+              72.88706974685046,
+              19.061663512084465
+            ],
+            [
+              72.8713034655244,
+              19.05539276651735
+            ],
+            [
+              72.8655443093755,
+              19.055140648113543
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

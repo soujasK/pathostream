@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+
+# Environment
+.env
+
+# Node (web/ has its own, more complete .gitignore; this covers root-level greps)
+node_modules/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
