@@ -2,6 +2,7 @@ import type {
   CdsHookResponse,
   DemoForecastsResponse,
   DemoStateResponse,
+  DemoTelemetryResponse,
   NetworkStation,
   StationState,
 } from './types'
@@ -57,6 +58,18 @@ export const api = {
   simulate: (params: { stationId: string; flagged: boolean; severityIndex?: number; elapsedMinutes?: number }) =>
     request<StationState>('/demo/simulate', { method: 'POST', body: JSON.stringify(params) }),
   reset: () => request<{ status: string }>('/demo/reset', { method: 'POST' }),
+  telemetry: () => request<DemoTelemetryResponse>('/demo/telemetry'),
+  telemetryTick: () => request<DemoTelemetryResponse>('/demo/telemetry/tick', { method: 'POST' }),
+  telemetryInject: (stationId: string) =>
+    request<{ status: string; stationId: string }>('/demo/telemetry/inject', {
+      method: 'POST',
+      body: JSON.stringify({ stationId }),
+    }),
+  telemetryClear: (stationId: string) =>
+    request<{ status: string; stationId: string }>('/demo/telemetry/clear', {
+      method: 'POST',
+      body: JSON.stringify({ stationId }),
+    }),
   patientView: (station: NetworkStation) =>
     request<CdsHookResponse>('/cds-services/patient-view', {
       method: 'POST',

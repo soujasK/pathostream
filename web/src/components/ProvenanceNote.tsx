@@ -22,6 +22,9 @@ const ROWS: Row[] = [
   { claim: '~40x pharmaceutical contamination spike downstream of Coimbra’s WWTP on the Mondego', status: 'verified', note: 'Kötke et al. 2024, Heliyon 10(15):e34825. See METHODS.md §6a.' },
   { claim: 'This demo’s 6 stations are OneAquaHealth’s real Coimbra field sites', status: 'illustrative', note: 'No -- the real project monitors small tributary streams, not these Mondego-riverbank landmarks. See METHODS.md §6b.' },
   { claim: 'OneAquaHealth is a real, active EUR 4.9M Horizon Europe project (Univ. of Coimbra)', status: 'verified', note: 'Confirmed directly against its CORDIS project page, grant 101086521. See METHODS.md §6b.' },
+  { claim: 'EWMA control chart (Roberts 1959) for statistical early-warning detection', status: 'verified', note: 'Real citation and formula, exact time-varying control limits, independently tested. See METHODS.md §8.' },
+  { claim: 'Early-warning telemetry reflects real Mondego sensor readings', status: 'illustrative', note: 'No -- synthetic Gaussian noise around a documented baseline. The algorithm is real; the data feeding it is not. See METHODS.md §8.' },
+  { claim: 'GDPR Article 9 / EU Health Data Space (Reg. (EU) 2025/327) compliance', status: 'illustrative', note: 'Not implemented -- named and discussed honestly as a real, current, acknowledged gap. See METHODS.md §9.' },
 ]
 
 export function ProvenanceNote() {

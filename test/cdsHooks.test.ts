@@ -213,13 +213,58 @@ describe("POST /cds-services/order-select", () => {
   });
 });
 
+describe("GET/POST /demo/telemetry (EWMA early-warning layer)", () => {
+  it("lists all 6 stations with no history before any tick", async () => {
+    const res = await request(app).get("/demo/telemetry");
+    expect(res.body.stations).toHaveLength(MONDEGO_STATIONS.length);
+    expect(res.body.stations.every((s: { latest: unknown }) => s.latest === null)).toBe(true);
+  });
+
+  it("advances every station's tick count on POST /demo/telemetry/tick", async () => {
+    await request(app).post("/demo/telemetry/tick");
+    const res = await request(app).post("/demo/telemetry/tick");
+    const target = res.body.stations.find((s: { stationId: string }) => s.stationId === TARGET.id);
+    expect(target.tick).toBe(2);
+    expect(target.latest).not.toBeNull();
+  });
+
+  it("rejects an unknown stationId on inject and clear", async () => {
+    const injectRes = await request(app).post("/demo/telemetry/inject").send({ stationId: "not-a-real-station" });
+    expect(injectRes.status).toBe(400);
+    const clearRes = await request(app).post("/demo/telemetry/clear").send({ stationId: "not-a-real-station" });
+    expect(clearRes.status).toBe(400);
+  });
+
+  it("eventually flags an out-of-control reading after an injected event, well before an unflagged station", async () => {
+    await request(app).post("/demo/telemetry/inject").send({ stationId: TARGET.id });
+    let targetOutOfControl = false;
+    for (let i = 0; i < 40 && !targetOutOfControl; i++) {
+      const res = await request(app).post("/demo/telemetry/tick");
+      const target = res.body.stations.find((s: { stationId: string }) => s.stationId === TARGET.id);
+      targetOutOfControl = target.latest?.outOfControl === true;
+    }
+    expect(targetOutOfControl).toBe(true);
+
+    const finalState = await request(app).get("/demo/telemetry");
+    const unflagged = finalState.body.stations.find((s: { stationId: string }) => s.stationId === SOURCE.id);
+    expect(unflagged.latest?.outOfControl).toBe(false);
+  });
+
+  it("POST /demo/reset also clears telemetry state", async () => {
+    await request(app).post("/demo/telemetry/inject").send({ stationId: TARGET.id });
+    await request(app).post("/demo/telemetry/tick");
+    await request(app).post("/demo/reset");
+    const res = await request(app).get("/demo/telemetry");
+    const target = res.body.stations.find((s: { stationId: string }) => s.stationId === TARGET.id);
+    expect(target.tick).toBe(0);
+    expect(target.eventInjected).toBe(false);
+  });
+});
+
 describe("evaluation latency", () => {
   // Measures `handlePatientView` directly, in-process -- HTTP/Express/
   // network round-trip time is a deployment concern, not a property of the
-  // deterministic evaluation logic itself, so it's excluded here (the same
-  // separation the sibling Python service makes in
-  // test_patient_view_latency_is_under_300ms, which times the handler
-  // function directly rather than an HTTP call).
+  // deterministic evaluation logic itself, so it's excluded here.
   it("evaluates patient-view in under 35ms, deterministic path, warmed up", () => {
     setStationState(TARGET.id, true, 0.9);
     const body = patientViewRequest(TARGET.latitude, TARGET.longitude) as PatientViewRequest;

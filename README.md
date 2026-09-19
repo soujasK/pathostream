@@ -6,6 +6,11 @@ through Coimbra, Portugal: a real 6-station monitoring network feeding a
 `RiskAssessment.prediction` resources, and served over an Express CDS
 Hooks service that fires a precautionary card in the EHR before a
 clinician would otherwise have any reason to suspect waterborne exposure.
+A second, independent layer -- a real EWMA statistical control chart
+(Roberts 1959) over live, noisy per-station telemetry -- adds genuine
+early-warning detection on top of the transport/forecasting model, rather
+than relying on an operator-set flag alone. See "Two independent
+signals" below and `METHODS.md` §8.
 
 **See `METHODS.md`** for the governing equations, parameter provenance,
 and independent numerical validation behind the transport model -- the
@@ -62,6 +67,30 @@ that gap is a solvable interoperability problem *today*, using FHIR R4 and
 CDS Hooks -- standards that already exist -- rather than a research
 problem requiring new infrastructure.
 
+## Two independent signals: detection vs. propagation
+
+It's tempting to treat "a station is contaminated" as a single fact an
+operator flips on. This prototype deliberately keeps two **independent**
+signals, because a real deployment would have to:
+
+1. **Detection** (`src/analytics/`, new): a real EWMA statistical process
+   control chart (Roberts 1959) continuously monitors each station's live,
+   noisy telemetry and raises a statistical alarm on a *sustained drift*,
+   not a hand-toggled switch or a single-sample threshold. Drive it from
+   the dashboard's "Statistical early-warning layer" panel -- watch a
+   station move from "in control" to "anomaly detected" a few ticks after
+   injecting a synthetic contamination event, live.
+2. **Propagation** (`src/hydrology/`, described above): once a station
+   *is* contaminated (by either the detector or the manual "Simulate
+   breach" control), the transport model predicts when and with what
+   probability that signal reaches every downstream station.
+
+These are not fused in this prototype -- the detector's alarm does not
+automatically set a station's exposure-engine flag. That fusion is real,
+useful future work, named honestly as unfinished rather than either
+skipped silently or implemented hastily just to claim it exists. See
+`METHODS.md` §8 for the full statistical detail and citations.
+
 ## What's verified vs illustrative
 
 | Claim | Status |
@@ -88,6 +117,9 @@ problem requiring new infrastructure.
 | Flooding doubles the odds of harmful pathogen concentrations in EU water bodies | **Real, verified** — European Environment Agency, fetched directly from eea.europa.eu. See `METHODS.md` §6 and "Why this case study" above. |
 | Measured ~40x pharmaceutical contamination spike downstream of Coimbra's WWTP on the Mondego | **Real, verified** — Kötke et al. (2024), *Heliyon* 10(15):e34825, DOI 10.1016/j.heliyon.2024.e34825. See `METHODS.md` §6a. |
 | OneAquaHealth is a real, active EUR 4.9M Horizon Europe project coordinated by the University of Coimbra | **Verified** directly against its official CORDIS project page (grant 101086521). See `METHODS.md` §6b. |
+| EWMA control chart (Roberts 1959) for statistical early-warning detection | **Real, independently confirmed** citation and formula; correctly implemented with exact (not asymptotic-only) time-varying control limits and independently tested. See `METHODS.md` §8. |
+| The early-warning layer's telemetry reflects real Mondego sensor readings | **No.** Synthetic Gaussian noise around a documented illustrative baseline (15±3 NTU) — see `METHODS.md` §8. The *algorithm* is real; the *data it's fed* is not. |
+| GDPR Article 9 / EU Health Data Space (Reg. (EU) 2025/327) compliance | **Not implemented.** Both are real, verified, currently-relevant EU instruments, named and discussed honestly as an acknowledged gap, not implemented or claimed. See `METHODS.md` §9. |
 
 ## Architecture
 
@@ -95,6 +127,10 @@ problem requiring new infrastructure.
 .
 ├── src/
 │   ├── data/mondegoNetwork.ts       6-station network + flow order (see provenance notes above)
+│   ├── analytics/
+│   │   ├── ewma.ts                  real EWMA statistical process control chart (Roberts 1959)
+│   │   ├── telemetryStream.ts       synthetic noisy per-station turbidity signal
+│   │   └── earlyWarningEngine.ts    wires the two into a per-station early-warning state
 │   ├── hydrology/
 │   │   ├── advectionDispersion.ts   1D transport model (arrival/peak/clearance/probability)
 │   │   ├── channelDispersion.ts     Fischer (1979)/Liu (1977) dispersion-coefficient estimator
@@ -114,7 +150,7 @@ problem requiring new infrastructure.
 │       ├── orderSelect.ts           order-select stewardship-trigger handler
 │       ├── discovery.ts             /cds-services manifest
 │       └── server.ts                Express app + /demo/* scaffolding
-├── test/                            63 tests: hydrology math, PDE validation, FHIR shape, CDS Hooks, exposure phases
+├── test/                            86 tests: hydrology math, PDE validation, FHIR shape, CDS Hooks, exposure phases, EWMA/telemetry
 ├── web/                             React + Vite + Tailwind + MapLibre dashboard (the primary demo UI)
 ├── METHODS.md                       governing equations, parameter provenance, citations
 └── index.html                       static "about this project" landing page
@@ -125,7 +161,7 @@ problem requiring new infrastructure.
 ```bash
 npm install
 npm run dev     # API on http://127.0.0.1:4300, auto-reload
-npm test        # 63 tests
+npm test        # 86 tests
 npm run build   # tsc -> dist/
 
 # Dashboard (separate terminal, needs the API running above)
@@ -142,6 +178,13 @@ downstream target. It sets *when* you're looking, not the underlying
 transport math -- the same model and phase boundaries apply at every jump
 point (see `src/cdsHooks/server.ts`).
 
+The "Statistical early-warning layer" panel below it is independent (see
+"Two independent signals" above): it ticks its own live clock client-side
+(~1.2s/sample) against `/demo/telemetry/tick`, and "Inject anomaly" starts
+a sustained synthetic contamination drift at that station's synthetic
+sensor from the *next* tick onward -- watch the badge flip from
+"In control" to "Anomaly detected" a few ticks later, in real time.
+
 ### Try it
 
 ```bash
@@ -155,6 +198,12 @@ curl -X POST http://127.0.0.1:4300/demo/simulate \
 
 # Per-station state + evaluation (own-flag or downstream-forecast phase)
 curl http://127.0.0.1:4300/demo/state
+
+# Statistical early-warning layer: inject a synthetic anomaly, then advance
+# the telemetry clock a few times and watch outOfControl flip to true
+curl -X POST http://127.0.0.1:4300/demo/telemetry/inject \
+  -H "Content-Type: application/json" -d '{"stationId":"PT-SANTA-CLARA"}'
+curl -X POST http://127.0.0.1:4300/demo/telemetry/tick
 
 # Every currently-active downstream forecast, cascaded through the flow order
 curl http://127.0.0.1:4300/demo/forecasts
@@ -193,6 +242,12 @@ curl -X POST http://127.0.0.1:4300/cds-services/patient-view \
   segment; a real deployment would vary this per reach based on local
   channel geometry (see `channelDispersion.ts` for the estimator that
   would support that).
+- The EWMA early-warning layer's alarm does not automatically set a
+  station's exposure-engine flag (see "Two independent signals" above).
+- No GDPR consent management, Article 30 processing register, or Data
+  Protection Impact Assessment; no EHDS conformance (Health Data Access
+  Body process, certified EHR system). See `METHODS.md` §9 for what these
+  real EU instruments require and why they're out of scope here.
 
 ## Clinical & regulatory status
 

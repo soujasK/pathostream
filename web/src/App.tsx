@@ -2,11 +2,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { api } from './api/client'
 import type { StationEvaluation } from './api/types'
+import { useTelemetryTick } from './hooks/useTelemetryTick'
 import { CdsCardView } from './components/CdsCardView'
 import { DisclaimerBar } from './components/DisclaimerBar'
 import { Header } from './components/Header'
 import { ProvenanceNote } from './components/ProvenanceNote'
 import { StatusHero } from './components/StatusHero'
+import { EarlyWarningPanel } from './components/reach/EarlyWarningPanel'
 import { ForecastPanel } from './components/reach/ForecastPanel'
 import { PatientStationPicker } from './components/reach/PatientStationPicker'
 import { ReachMap } from './components/reach/ReachMap'
@@ -76,10 +78,20 @@ export default function App() {
     await queryClient.invalidateQueries({ queryKey: ['demo-forecasts'] })
   }
 
+  const telemetry = useTelemetryTick()
+
   const handleReset = async () => {
     await api.reset()
     await queryClient.invalidateQueries({ queryKey: ['demo-state'] })
     await queryClient.invalidateQueries({ queryKey: ['demo-forecasts'] })
+    await telemetry.refresh()
+  }
+
+  const handleInjectAnomaly = async (stationId: string) => {
+    await api.telemetryInject(stationId)
+  }
+  const handleClearAnomaly = async (stationId: string) => {
+    await api.telemetryClear(stationId)
   }
 
   return (
@@ -129,6 +141,21 @@ export default function App() {
                   onToggleBreach={(id, flagged) => void handleToggleBreach(id, flagged)}
                   onFastForward={(minutes) => void handleFastForward(minutes)}
                   onReset={() => void handleReset()}
+                />
+              </Panel>
+            </Reveal>
+
+            <Reveal delay={0.18}>
+              <Panel>
+                <PanelHeader
+                  title="Statistical early-warning layer"
+                  subtitle="Live EWMA control chart over raw per-station telemetry"
+                />
+                <EarlyWarningPanel
+                  stations={stations}
+                  telemetry={telemetry.stations}
+                  onInject={(id) => void handleInjectAnomaly(id)}
+                  onClear={(id) => void handleClearAnomaly(id)}
                 />
               </Panel>
             </Reveal>

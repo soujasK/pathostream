@@ -66,6 +66,28 @@ export interface DemoForecastsResponse {
   forecasts: NetworkForecast[]
 }
 
+export interface EwmaResult {
+  tick: number
+  sample: number
+  z: number
+  upperControlLimit: number
+  lowerControlLimit: number
+  outOfControl: boolean
+}
+
+export interface EarlyWarningState {
+  stationId: string
+  tick: number
+  eventInjected: boolean
+  latest: EwmaResult | null
+  history: EwmaResult[]
+}
+
+export interface DemoTelemetryResponse {
+  catchmentId: string
+  stations: EarlyWarningState[]
+}
+
 export type CdsIndicator = 'info' | 'warning' | 'critical'
 
 export interface CardSource {

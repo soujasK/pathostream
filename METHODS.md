@@ -226,7 +226,126 @@ patient-address-proximity CDS demo, not because they are OneAquaHealth's
 literal field sites. See README's provenance table for the equivalent
 disclosure in plain terms.
 
-## 7. What this document does not claim
+## 8. Statistical early-warning layer (EWMA control chart)
+
+Sections 1-6 above are the *transport and forecasting* model: given that a
+station IS contaminated, how far and how fast does that signal propagate.
+They say nothing about how a station's contamination is first detected --
+in this prototype, `src/cdsHooks/exposureEngine.ts`'s `flagged` state was,
+until this section's addition, set directly by an operator (a "Simulate
+breach" button), a deliberate simplification for demoing the transport
+model in isolation, but not a claim that real contamination detection is
+that simple.
+
+`src/analytics/` adds a second, independent capability: real statistical
+process control over a continuous, noisy per-station signal, rather than a
+human-set switch or a single-sample hard threshold.
+
+- **EWMA control chart** -- Roberts, S.W. (1959), "Control Chart Tests
+  Based on Geometric Moving Averages", *Technometrics*, 1(3), 239-250.
+  Citation (title, author, journal, volume/issue, pages) independently
+  confirmed against the paper's listing on tandfonline.com and its
+  reproduction at stat.cmu.edu/technometrics. `src/analytics/ewma.ts`
+  implements the real recurrence
+  ```
+  z_t = lambda * x_t + (1 - lambda) * z_{t-1}
+  ```
+  with the *exact* (not asymptotic-approximation) time-varying control
+  limits
+  ```
+  Var(z_t) = sigma0^2 * (lambda / (2 - lambda)) * (1 - (1 - lambda)^(2t))
+  UCL_t/LCL_t = mu0 +/- L * sqrt(Var(z_t))
+  ```
+  so early-tick control limits correctly reflect that z_t is still noisier
+  right after startup than it is asymptotically -- using the common
+  asymptotic-only approximation from sample 1 would understate that and
+  risk spurious early alarms. lambda=0.25 and L=3 are the conventional
+  defaults for detecting small-to-moderate sustained shifts (three-sigma
+  limits are standard industrial SPC practice; Hunter, J.S. (1986), "The
+  Exponentially Weighted Moving Average", *Journal of Quality Technology*,
+  18(4), 203-210, independently confirmed to exist and discuss this same
+  lambda range).
+- **Why EWMA and not a raw threshold**: a raw threshold only trips once a
+  single sample crosses it. EWMA is a smoothed statistic with geometrically
+  decaying memory, so it is sensitive to a *sustained* shift that stays
+  within noisy single-sample bounds -- the realistic failure mode this
+  layer targets, versus the instantaneous acute event
+  `advectionDispersion.ts`'s scenario and the original demo's
+  "Simulate breach" button both model. The two detection modes are
+  complementary, not competing.
+- **Synthetic telemetry** (`src/analytics/telemetryStream.ts`): a Gaussian
+  (Box-Muller) noise process around a documented, illustrative turbidity
+  baseline (15 +/- 3 NTU), with a sustained +45 NTU mean-shift standing in
+  for a real contamination event's onset -- illustrative magnitudes, not
+  measured Mondego sensor data, same disclosure as section 3's dispersion
+  default.
+- **Independently tested, not just asserted**: `test/ewma.test.ts` checks
+  the control-limit formula against its closed form at tick 1 and its
+  asymptotic value after many ticks, confirms a stationary in-control
+  process rarely false-alarms, and confirms a sustained shift is detected
+  within a bounded number of samples. `test/telemetryStream.test.ts` and
+  `test/earlyWarningEngine.test.ts` check the noise generator's statistics
+  and the full per-station wiring, including that an unflagged station
+  stays in control while an injected one is correctly detected.
+- **Deliberately NOT fused with `exposureEngine.ts`**: this layer's
+  out-of-control signal does not automatically set a station's `flagged`
+  state or drive the CDS Hooks cards -- the two are shown as separate,
+  independently meaningful signals (`/demo/state` vs `/demo/telemetry`).
+  Fusing them (e.g., "N consecutive out-of-control ticks promotes a
+  station to flagged") is a natural next step, left undone and disclosed
+  as such rather than implemented hastily -- this prototype's exposure
+  evaluations and every test covering `exposureEngine.ts`'s
+  predicted/confirmed/cleared phases and the CDS Hooks cards they drive
+  are unaffected by whether this layer's alarm is on or off.
+- **A standard this is NOT claiming conformance to**: ISO/IEEE 11073
+  Personal Health Data Standards is a real, independently confirmed IEEE
+  standards family (11073.org; IEEE Standards Association) -- but it
+  targets personal/home health devices (weighing scales, blood-pressure
+  and glucose monitors), a different device class from a river-catchment
+  sensor network. Its "independent living activity hub" specialization
+  (ISO/IEEE 11073-10471) does normalize simple environmental-monitor
+  inputs, which is the closest real point of contact, but this prototype
+  does not implement or claim conformance to 11073's device data model --
+  noted here because checking and disclosing a near-miss is more honest
+  than silently omitting it or force-fitting an IEEE citation that doesn't
+  actually apply.
+
+## 9. EU health-data regulatory context (not implemented, disclosed)
+
+This prototype handles a patient's approximate home location and a
+simulated clinical exposure signal -- special-category health data under
+EU law if this were real. Two real, current EU legal instruments are
+directly relevant, independently confirmed, and worth naming explicitly
+rather than leaving this as an unaddressed gap:
+
+- **GDPR Article 9** (Regulation (EU) 2016/679) classifies health data as
+  a special category requiring an explicit legal basis beyond ordinary
+  personal data. This prototype's patient geolocation is synthetic demo
+  data, computed into a distance-to-nearest-station and never persisted
+  (`src/cdsHooks/geolocation.ts`, `patientView.ts`) -- consistent with a
+  data-minimization posture, but this prototype does **not** implement
+  consent management, an Article 30 records-of-processing register, or a
+  Data Protection Impact Assessment, all of which a real deployment
+  handling real patient locations would require.
+- **The European Health Data Space Regulation**, Regulation (EU) 2025/327,
+  entered into force 26 May 2025 -- independently confirmed via its
+  official text and multiple independent legal-advisory summaries. It is
+  the first EU-wide legal framework for both primary use (direct care) and
+  secondary use (research, policy-making) of electronic health data, and
+  establishes HealthData@EU as cross-border infrastructure. This
+  prototype's use of standard FHIR R4 resources and CDS Hooks is
+  *directionally* aligned with EHDS's own interoperability aims, but this
+  prototype implements none of EHDS's actual obligations (e.g., a
+  certified EHR system, a national Health Data Access Body process) and
+  makes no conformance claim to it.
+
+Both are named here, not glossed over, for the same reason section 6b
+discloses this prototype's non-affiliation with OneAquaHealth: a real
+claim about real regulation is more useful to a reader than silence, and
+silence would misrepresent the actual gap between this prototype and a
+real, deployable EU health-data system.
+
+## 10. What this document does not claim
 
 - No claim that `DEFAULT_DISPERSION_COEFFICIENT_M2_S`, the reach distance,
   or the assumed velocity match the real Mondego at Ponte da Portela --

@@ -1,6 +1,13 @@
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { pathToFileURL } from "node:url";
+import {
+  advanceAllStations,
+  clearTelemetryEvent,
+  getAllEarlyWarningStates,
+  injectTelemetryEvent,
+  resetAllTelemetry,
+} from "../analytics/earlyWarningEngine.js";
 import { MONDEGO_CATCHMENT_ID, MONDEGO_STATIONS, stationById } from "../data/mondegoNetwork.js";
 import { buildForecastRiskAssessment } from "../fhir/riskAssessment.js";
 import { discoveryManifest } from "./discovery.js";
@@ -66,7 +73,43 @@ export function createServer() {
 
   app.post("/demo/reset", (_req: Request, res: Response) => {
     resetAllStations();
+    resetAllTelemetry();
     res.json({ status: "reset" });
+  });
+
+  // --- Statistical early-warning layer: a real EWMA control chart
+  // (src/analytics/ewma.ts) monitoring a synthetic noisy per-station
+  // telemetry signal (src/analytics/telemetryStream.ts). Deliberately
+  // independent of the exposure engine above -- see that module's
+  // docstring and README's "Two independent signals" note. ---
+
+  app.get("/demo/telemetry", (_req: Request, res: Response) => {
+    res.json({ catchmentId: MONDEGO_CATCHMENT_ID, stations: getAllEarlyWarningStates() });
+  });
+
+  app.post("/demo/telemetry/tick", (_req: Request, res: Response) => {
+    const stations = advanceAllStations();
+    res.json({ catchmentId: MONDEGO_CATCHMENT_ID, stations });
+  });
+
+  app.post("/demo/telemetry/inject", (req: Request, res: Response) => {
+    const body = req.body as { stationId?: string };
+    if (!body.stationId || !stationById(body.stationId)) {
+      res.status(400).json({ error: `Unknown stationId '${body.stationId}'` });
+      return;
+    }
+    injectTelemetryEvent(body.stationId);
+    res.json({ status: "event-injected", stationId: body.stationId });
+  });
+
+  app.post("/demo/telemetry/clear", (req: Request, res: Response) => {
+    const body = req.body as { stationId?: string };
+    if (!body.stationId || !stationById(body.stationId)) {
+      res.status(400).json({ error: `Unknown stationId '${body.stationId}'` });
+      return;
+    }
+    clearTelemetryEvent(body.stationId);
+    res.json({ status: "cleared", stationId: body.stationId });
   });
 
   app.get("/demo/state", (_req: Request, res: Response) => {
