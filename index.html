@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PathoStream-EHR &mdash; One Health CDS prototypes</title>
+<title>OAH-Mondego &mdash; One Health CDS prototype</title>
 <style>
   :root {
-    --color-brand-50: #f0fdfa; --color-brand-100: #ccfbf1; --color-brand-300: #5eead4;
-    --color-brand-600: #0d9488; --color-brand-700: #0f766e; --color-brand-900: #134e4a;
+    --color-brand-50: #eff6ff; --color-brand-100: #dbeafe; --color-brand-300: #93c5fd;
+    --color-brand-400: #60a5fa; --color-brand-600: #2563eb; --color-brand-700: #1d4ed8; --color-brand-900: #1e3a8a;
     --color-healthy: #059669; --color-healthy-bg: #ecfdf5; --color-healthy-border: #a7f3d0;
     --color-critical: #dc2626; --color-critical-bg: #fef2f2; --color-critical-border: #fecaca;
     --color-warning: #d97706; --color-warning-bg: #fffbeb; --color-warning-border: #fde68a;
@@ -28,84 +28,88 @@
     background: var(--color-surface);
   }
   .header-inner {
-    max-width: 1120px; margin: 0 auto; padding: 20px 24px;
-    display: flex; align-items: center; gap: 12px;
+    max-width: 1000px; margin: 0 auto; padding: 20px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
   }
+  .brand { display: flex; align-items: center; gap: 12px; }
   .logo {
     width: 36px; height: 36px; border-radius: 8px; background: var(--color-brand-700);
-    color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
   header h1 { font-size: 17px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
   header p { font-size: 12px; color: var(--color-ink-muted); margin: 1px 0 0; }
+  .header-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .header-tags span {
+    font-size: 11px; border: 1px solid var(--color-border); background: var(--color-surface-muted);
+    color: var(--color-ink-muted); padding: 4px 10px; border-radius: 999px;
+  }
 
-  main { max-width: 1120px; margin: 0 auto; padding: 28px 24px 64px; }
+  main { max-width: 1000px; margin: 0 auto; padding: 28px 24px 64px; }
 
   .hero {
-    background: linear-gradient(135deg, #0f172a, #134e4a);
-    color: #fff; border-radius: 14px; padding: 36px 32px; margin-bottom: 28px;
+    background: linear-gradient(135deg, #0f172a, #1e3a8a);
+    color: #fff; border-radius: 14px; padding: 36px 32px; margin-bottom: 20px;
   }
   .hero .eyebrow {
     font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-brand-300);
     font-weight: 600; margin-bottom: 10px;
   }
   .hero h2 { font-size: 26px; margin: 0 0 10px; font-weight: 650; letter-spacing: -0.01em; }
-  .hero p { font-size: 14px; color: #cbd5e1; max-width: 720px; line-height: 1.6; margin: 0; }
-
-  .notice {
-    background: var(--color-warning-bg); border: 1px solid var(--color-warning-border);
-    color: #92400e; font-size: 12.5px; border-radius: 10px; padding: 12px 16px; margin-bottom: 28px; line-height: 1.6;
-  }
-  .notice strong { color: #78350f; }
-
-  .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-  @media (min-width: 860px) { .grid { grid-template-columns: 1fr 1fr; } }
-
-  .card {
-    background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px;
-    padding: 22px; display: flex; flex-direction: column; gap: 14px;
-  }
-  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-  .card-title { font-size: 16px; font-weight: 650; margin: 0 0 3px; }
-  .card-sub { font-size: 12.5px; color: var(--color-ink-muted); margin: 0; }
-  .flag { font-size: 18px; line-height: 1; }
+  .hero p { font-size: 14px; color: #cbd5e1; max-width: 720px; line-height: 1.65; margin: 0; }
+  .hero .status-row { margin-top: 22px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
   .status-pill {
     display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600;
-    padding: 4px 10px; border-radius: 999px; border: 1px solid var(--color-border); color: var(--color-ink-muted);
-    white-space: nowrap;
+    padding: 5px 11px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.25);
+    color: #e2e8f0; background: rgba(255,255,255,0.06); white-space: nowrap;
   }
-  .status-pill .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--color-ink-faint); }
-  .status-pill.up { color: var(--color-healthy); background: var(--color-healthy-bg); border-color: var(--color-healthy-border); }
-  .status-pill.up .dot { background: var(--color-healthy); }
-  .status-pill.down { color: var(--color-critical); background: var(--color-critical-bg); border-color: var(--color-critical-border); }
-  .status-pill.down .dot { background: var(--color-critical); }
+  .status-pill .dot { width: 7px; height: 7px; border-radius: 999px; background: #94a3b8; }
+  .status-pill.up { color: #6ee7b7; background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.35); }
+  .status-pill.up .dot { background: #34d399; }
+  .status-pill.down { color: #fca5a5; background: rgba(220,38,38,0.12); border-color: rgba(220,38,38,0.35); }
+  .status-pill.down .dot { background: #f87171; }
 
-  .card p.desc { font-size: 13px; color: var(--color-ink-muted); line-height: 1.65; margin: 0; }
+  .btn {
+    text-decoration: none; font-size: 13px; font-weight: 600;
+    padding: 9px 16px; border-radius: 8px; transition: opacity .15s ease; display: inline-block;
+  }
+  .btn.primary { background: var(--color-brand-400); color: #0f172a; }
+  .btn.primary:hover { opacity: 0.88; }
 
-  .facts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-  .facts li { font-size: 12.5px; color: var(--color-ink-muted); display: flex; gap: 8px; }
-  .facts li::before { content: "\2013"; color: var(--color-ink-faint); flex-shrink: 0; }
-  .facts b { color: var(--color-ink); font-weight: 600; }
+  .notice {
+    background: var(--color-warning-bg); border: 1px solid var(--color-warning-border);
+    color: #92400e; font-size: 12.5px; border-radius: 10px; padding: 12px 16px; margin-bottom: 22px; line-height: 1.6;
+  }
+  .notice strong { color: #78350f; }
+
+  .why {
+    background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px;
+    padding: 22px; margin-bottom: 20px;
+  }
+  .why h3 { font-size: 14px; font-weight: 650; margin: 0 0 14px; }
+  .why ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .why li { font-size: 13px; color: var(--color-ink-muted); line-height: 1.65; }
+  .why li b { color: var(--color-ink); font-weight: 600; }
+  .why li .src { display: block; font-size: 11.5px; color: var(--color-ink-faint); margin-top: 3px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 20px; }
+  @media (min-width: 700px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  .stat-card {
+    background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 18px;
+  }
+  .stat-card .num { font-size: 24px; font-weight: 700; color: var(--color-brand-700); letter-spacing: -0.01em; }
+  .stat-card .label { font-size: 12.5px; color: var(--color-ink-muted); margin-top: 4px; line-height: 1.5; }
+  .stat-card .src { font-size: 11px; color: var(--color-ink-faint); margin-top: 8px; }
 
   .run-block {
     background: var(--color-surface-muted); border: 1px solid var(--color-border); border-radius: 8px;
     padding: 10px 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 12px; color: var(--color-ink); line-height: 1.7; white-space: pre-wrap;
+    font-size: 12px; color: var(--color-ink); line-height: 1.7; white-space: pre-wrap; margin: 12px 0 0;
   }
-
-  .card-actions { display: flex; gap: 8px; margin-top: auto; }
-  .btn {
-    flex: 1; text-align: center; text-decoration: none; font-size: 13px; font-weight: 600;
-    padding: 9px 14px; border-radius: 8px; transition: opacity .15s ease;
-  }
-  .btn.primary { background: var(--color-brand-700); color: #fff; }
-  .btn.primary:hover { opacity: 0.88; }
-  .btn.secondary { background: var(--color-surface-muted); border: 1px solid var(--color-border); color: var(--color-ink); }
-  .btn.secondary:hover { border-color: var(--color-brand-300); }
 
   .shared {
-    margin-top: 28px; background: var(--color-surface); border: 1px solid var(--color-border);
+    background: var(--color-surface); border: 1px solid var(--color-border);
     border-radius: 12px; padding: 22px;
   }
   .shared h3 { font-size: 14px; font-weight: 650; margin: 0 0 4px; }
@@ -126,10 +130,17 @@
 
 <header>
   <div class="header-inner">
-    <div class="logo">PS</div>
-    <div>
-      <h1>PathoStream-EHR</h1>
-      <p>One Health clinical decision support &mdash; two independent case-study prototypes</p>
+    <div class="brand">
+      <div class="logo">OAH</div>
+      <div>
+        <h1>OAH-Mondego</h1>
+        <p>Coimbra, Portugal &mdash; One Health clinical decision support prototype</p>
+      </div>
+    </div>
+    <div class="header-tags">
+      <span>EU Horizon Europe</span>
+      <span>OneAquaHealth</span>
+      <span>HL7 Europe IG</span>
     </div>
   </div>
 </header>
@@ -139,98 +150,84 @@
     <div class="eyebrow">Prototype &middot; not a certified medical device</div>
     <h2>Waterborne biohazard signal &rarr; CDS Hooks card, in real time</h2>
     <p>
-      Both prototypes below implement the same idea from scratch, in two different languages, against two
-      real rivers on two continents: a real-time river/catchment contamination signal drives a FHIR R4
-      <code>RiskAssessment</code>, downstream propagation forecasting via a 1D advection&ndash;dispersion
-      transport model, and a live CDS Hooks <code>patient-view</code> card in the EHR &mdash; before a
-      clinician would otherwise have any reason to suspect waterborne exposure. Two independent
-      implementations converging on the same standards-conformant shape is the actual interoperability
-      argument: the pattern generalizes because it is a <em>standard</em>, not because of anything specific
-      to one codebase.
+      A real-time river/catchment contamination signal drives a FHIR R4 <code>RiskAssessment</code>,
+      downstream propagation forecasting via a 1D advection&ndash;dispersion transport model
+      (independently validated against a direct numerical PDE solution), and a live CDS Hooks
+      <code>patient-view</code> card in the EHR &mdash; before a clinician would otherwise have any
+      reason to suspect waterborne exposure at a patient's home address.
     </p>
+    <div class="status-row">
+      <span class="status-pill" id="status-api" data-check="http://127.0.0.1:4300/demo/stations">
+        <span class="dot"></span><span class="label">checking&hellip;</span>
+      </span>
+      <a class="btn primary" href="http://localhost:5174/" target="_blank" rel="noopener">Open dashboard</a>
+    </div>
   </div>
 
   <div class="notice">
-    <strong>Read before demoing:</strong> every claim rendered on either dashboard is either independently
+    <strong>Read before demoing:</strong> every claim rendered on the dashboard is either independently
     verified (checked against a primary source at build time) or explicitly labeled illustrative/estimated
-    &mdash; never silently guessed. See each project's own README for the full verification table before
-    citing a specific number from either one.
+    &mdash; never silently guessed. See <a href="README.md">README.md</a> for the full verification table
+    before citing a specific number.
   </div>
 
-  <div class="grid">
-    <div class="card">
-      <div class="card-top">
-        <div>
-          <p class="card-title">PathoStream-EHR &mdash; Mithi River</p>
-          <p class="card-sub">Mumbai, India &middot; Python / FastAPI</p>
-        </div>
-        <span class="status-pill" id="status-mithi" data-check="http://127.0.0.1:8000/demo/stations">
-          <span class="dot"></span><span class="label">checking&hellip;</span>
-        </span>
-      </div>
-      <p class="desc">
-        The original case study: a 6-station synthetic sensor network across the Mithi River corridor,
-        a shapely-based catchment-matching spatial engine, a deterministic Catchment Contamination Index,
-        and a Sepsis Golden Hour CDS Hooks card wired to a live simulated Emergency Department patient.
-      </p>
-      <ul class="facts">
-        <li><b>32/32</b> pytest passing &middot; mypy --strict clean</li>
-        <li>Real FHIR R4 <b>Observation</b> / <b>RiskAssessment</b> / <b>Flag</b> resources, not mocked JSON</li>
-        <li>LOINC &amp; SNOMED CT codes independently verified against loinc.org / browser.ihtsdotools.org</li>
-      </ul>
-      <div class="run-block">cd app && uvicorn app.main:app --reload
-cd web &amp;&amp; npm run dev   # http://localhost:5173</div>
-      <div class="card-actions">
-        <a class="btn primary" href="http://localhost:5173/" target="_blank" rel="noopener">Open dashboard</a>
-        <a class="btn secondary" href="README.md" target="_blank" rel="noopener">README</a>
-      </div>
-    </div>
+  <div class="why">
+    <h3>Why this case study, why now: the real European problem</h3>
+    <ol>
+      <li>
+        <b>Flooding is a growing, quantified public-health risk across the EU, and it specifically
+        elevates waterborne-pathogen exposure.</b> Heavy rainfall events make it twice as likely to have
+        harmful pathogen concentrations in EU water bodies, from contaminated run-off and combined sewage
+        overflows.
+        <span class="src">European Environment Agency, eea.europa.eu (fetched directly)</span>
+      </li>
+      <li>
+        <b>The Mondego at Coimbra has real, measured, published contamination</b> &mdash; pharmaceutical
+        concentrations rose ~40&times; immediately downstream of Coimbra's wastewater treatment plant, with
+        one compound reaching a "high risk to aquatic life" score in that stretch.
+        <span class="src">Kötke et al. 2024, Heliyon 10(15):e34825, DOI 10.1016/j.heliyon.2024.e34825</span>
+      </li>
+      <li>
+        <b>Coimbra coordinates a real, active EUR 4.9M Horizon Europe research programme</b>
+        (OneAquaHealth, CORDIS grant 101086521, 2023&ndash;2026) built on exactly this premise: urban
+        freshwater ecosystem health and human One Health outcomes are linked. This prototype is not a
+        deliverable of that grant, but targets the same city and reuses the FHIR IG its standards partner,
+        HL7 Europe, publishes &mdash; disclosed honestly against the real project's own published scope.
+        <span class="src">cordis.europa.eu/project/id/101086521 (fetched directly); see METHODS.md &sect;6b</span>
+      </li>
+    </ol>
+  </div>
 
-    <div class="card">
-      <div class="card-top">
-        <div>
-          <p class="card-title">OAH-Mondego &mdash; Mondego River</p>
-          <p class="card-sub">Coimbra, Portugal &middot; TypeScript / Express</p>
-        </div>
-        <span class="status-pill" id="status-mondego" data-check="http://127.0.0.1:4300/demo/stations">
-          <span class="dot"></span><span class="label">checking&hellip;</span>
-        </span>
-      </div>
-      <p class="desc">
-        The European case study, built independently to prove the pattern is portable: a real 6-station
-        network of verified Mondego landmarks in Coimbra, a physically-derived Fischer/Liu dispersion
-        coefficient, a finite-difference PDE solver used purely to validate the closed-form transport
-        model, EU WFD ecological classification, and an antimicrobial-stewardship
-        <code>order-select</code> hook.
-      </p>
-      <ul class="facts">
-        <li><b>63/63</b> vitest passing &middot; tsc clean</li>
-        <li>Transport model independently validated against a direct numerical PDE solution</li>
-        <li>Leptospirosis/flooding rationale cites Naing et al. 2019, PLoS One (PMID 31141558)</li>
-      </ul>
-      <div class="run-block">cd oah-mondego &amp;&amp; npm run dev        # http://127.0.0.1:4300
-cd oah-mondego/web &amp;&amp; npm run dev   # http://localhost:5174</div>
-      <div class="card-actions">
-        <a class="btn primary" href="http://localhost:5174/" target="_blank" rel="noopener">Open dashboard</a>
-        <a class="btn secondary" href="oah-mondego/README.md" target="_blank" rel="noopener">README</a>
-      </div>
+  <div class="grid2">
+    <div class="stat-card">
+      <div class="num">5,584</div>
+      <div class="label">flood-related deaths recorded across 32 EEA member countries, 1980&ndash;2022</div>
+      <div class="src">European Environment Agency</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">~40&times;</div>
+      <div class="label">pharmaceutical concentration increase measured immediately downstream of Coimbra's WWTP on the Mondego</div>
+      <div class="src">Kötke et al. 2024, Heliyon</div>
     </div>
   </div>
 
   <div class="shared">
-    <h3>What both implementations actually share</h3>
-    <p class="lead">Not shared code &mdash; a shared standard, reimplemented independently on each side.</p>
+    <h3>What this prototype actually implements</h3>
+    <p class="lead">Standards-conformant, not a mockup &mdash; every resource shape below is real.</p>
     <div class="shared-grid">
-      <div class="shared-item"><b>FHIR R4</b>Observation, RiskAssessment.prediction, Flag, Bundle</div>
-      <div class="shared-item"><b>CDS Hooks</b>patient-view (both) + order-select (Mondego)</div>
-      <div class="shared-item"><b>Transport model</b>1D advection&ndash;dispersion, Taylor-dispersion closed form</div>
+      <div class="shared-item"><b>FHIR R4</b>Observation, RiskAssessment.prediction, Bundle</div>
+      <div class="shared-item"><b>CDS Hooks</b>patient-view + order-select (v3.0 ballot)</div>
+      <div class="shared-item"><b>Transport model</b>1D advection&ndash;dispersion, Taylor-dispersion closed form, numerically validated</div>
       <div class="shared-item"><b>Disclosure policy</b>every figure tagged verified or illustrative, never guessed</div>
     </div>
+    <div class="run-block">npm install && npm run dev        # http://127.0.0.1:4300
+cd web && npm install && npm run dev   # http://localhost:5174</div>
   </div>
 
   <footer>
-    Prototype software for a hackathon submission. Synthetic data throughout. Not a certified or cleared
-    medical device. See <a href="README.md">README.md</a> for full clinical &amp; regulatory status.
+    Prototype software. Synthetic simulated data throughout. Not a certified or cleared medical device.
+    See <a href="README.md">README.md</a> and <a href="METHODS.md">METHODS.md</a> for full clinical,
+    regulatory, and citation detail.
   </footer>
 </main>
 
@@ -242,14 +239,14 @@ cd oah-mondego/web &amp;&amp; npm run dev   # http://localhost:5174</div>
       .then(function (res) {
         if (res.ok) {
           pill.classList.add('up');
-          label.textContent = 'live';
+          label.textContent = 'API live on :4300';
         } else {
           throw new Error('bad status');
         }
       })
       .catch(function () {
         pill.classList.add('down');
-        label.textContent = 'not running';
+        label.textContent = 'API not running';
       });
   });
 </script>

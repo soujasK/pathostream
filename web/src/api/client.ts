@@ -1,18 +1,12 @@
-import type { CatchmentBoundary, CdsHookResponse, DemoConfig, DemoTickResponse, StationInfo } from './types'
+import type {
+  CdsHookResponse,
+  DemoForecastsResponse,
+  DemoStateResponse,
+  NetworkStation,
+  StationState,
+} from './types'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
-
-class ApiError extends Error {
-  status: number
-  path: string
-
-  constructor(status: number, path: string, message: string) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-    this.path = path
-  }
-}
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:4300'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -21,7 +15,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
   if (!res.ok) {
     const body = await res.text().catch(() => '')
-    throw new ApiError(res.status, path, `${init?.method ?? 'GET'} ${path} -> ${res.status}: ${body}`)
+    throw new Error(`${init?.method ?? 'GET'} ${path} -> ${res.status}: ${body}`)
   }
   return (await res.json()) as T
 }
@@ -38,17 +32,10 @@ function geolocationExtension(latitude: number, longitude: number) {
   }
 }
 
-export interface PatientViewParams {
-  station: StationInfo
-  betaLactamAllergy: boolean
-  renalImpairment: boolean
-}
-
-/** Builds a CDS Hooks patient-view request. Only the FHIR *shape* is
- * constructed client-side (a standard geolocation extension, an
- * AllergyIntolerance/Condition toggle); no clinical values are invented --
- * this mirrors exactly what ui/dashboard.py and tests/test_cds_hooks.py send. */
-function buildPatientViewRequest(params: PatientViewParams) {
+/** Builds a patient-view request for a virtual patient at the given
+ * network station -- only the FHIR extension *shape* is constructed
+ * client-side, nothing fabricated beyond the demo's own simulated state. */
+function buildPatientViewRequest(station: NetworkStation) {
   return {
     hookInstance: crypto.randomUUID(),
     hook: 'patient-view' as const,
@@ -57,47 +44,22 @@ function buildPatientViewRequest(params: PatientViewParams) {
       patient: {
         resourceType: 'Patient',
         id: 'demo-patient',
-        address: [{ extension: [geolocationExtension(params.station.latitude, params.station.longitude)] }],
-      },
-      allergies: {
-        resourceType: 'Bundle',
-        entry: params.betaLactamAllergy
-          ? [
-              {
-                resource: {
-                  resourceType: 'AllergyIntolerance',
-                  code: { text: 'Penicillin' },
-                  reaction: [{ severity: 'severe' }],
-                },
-              },
-            ]
-          : [],
-      },
-      conditions: {
-        resourceType: 'Bundle',
-        entry: params.renalImpairment
-          ? [{ resource: { resourceType: 'Condition', code: { text: 'Chronic kidney disease' } } }]
-          : [],
+        address: [{ extension: [geolocationExtension(station.latitude, station.longitude)] }],
       },
     },
   }
 }
 
 export const api = {
-  config: () => request<DemoConfig>('/demo/config'),
-  stations: () => request<StationInfo[]>('/demo/stations'),
-  catchmentBoundary: () => request<CatchmentBoundary>('/demo/catchment-boundary'),
-  tick: (breachedStationIds: string[]) =>
-    request<DemoTickResponse>('/demo/tick', {
-      method: 'POST',
-      body: JSON.stringify({ breached_station_ids: breachedStationIds }),
-    }),
+  stations: () => request<NetworkStation[]>('/demo/stations'),
+  state: () => request<DemoStateResponse>('/demo/state'),
+  forecasts: () => request<DemoForecastsResponse>('/demo/forecasts'),
+  simulate: (params: { stationId: string; flagged: boolean; severityIndex?: number; elapsedMinutes?: number }) =>
+    request<StationState>('/demo/simulate', { method: 'POST', body: JSON.stringify(params) }),
   reset: () => request<{ status: string }>('/demo/reset', { method: 'POST' }),
-  patientView: (params: PatientViewParams) =>
+  patientView: (station: NetworkStation) =>
     request<CdsHookResponse>('/cds-services/patient-view', {
       method: 'POST',
-      body: JSON.stringify(buildPatientViewRequest(params)),
+      body: JSON.stringify(buildPatientViewRequest(station)),
     }),
 }
-
-export { ApiError }

@@ -5,8 +5,6 @@ interface RevealProps {
   delay?: number
 }
 
-/** Simple staggered entrance -- used so the dashboard doesn't just pop into
- * existence fully-formed on load. */
 export function Reveal({ children, delay = 0 }: RevealProps) {
   return (
     <motion.div

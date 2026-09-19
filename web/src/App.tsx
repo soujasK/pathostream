@@ -1,69 +1,91 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { api } from './api/client'
-import type { StationReading } from './api/types'
+import type { StationEvaluation } from './api/types'
+import { CdsCardView } from './components/CdsCardView'
 import { DisclaimerBar } from './components/DisclaimerBar'
 import { Header } from './components/Header'
+import { ProvenanceNote } from './components/ProvenanceNote'
 import { StatusHero } from './components/StatusHero'
-import { CdsCardView } from './components/hospital/CdsCardView'
-import { PatientControls } from './components/hospital/PatientControls'
-import { TriageVitals } from './components/hospital/TriageVitals'
-import { CciTrendChart } from './components/river/CciTrendChart'
-import { EventLog } from './components/river/EventLog'
-import { ForecastPanel } from './components/river/ForecastPanel'
-import { RiverMap } from './components/river/RiverMap'
-import { StationList } from './components/river/StationList'
+import { ForecastPanel } from './components/reach/ForecastPanel'
+import { PatientStationPicker } from './components/reach/PatientStationPicker'
+import { ReachMap } from './components/reach/ReachMap'
+import { SimulatorControls } from './components/reach/SimulatorControls'
 import { Panel, PanelHeader } from './components/ui/Panel'
 import { Reveal } from './components/ui/Reveal'
-import { useCdsCard } from './hooks/useCdsCard'
-import { useDemoTick } from './hooks/useDemoTick'
+
+const POLL_INTERVAL_MS = 3000
+
+function worstEvaluation(evaluations: StationEvaluation[]): StationEvaluation | undefined {
+  const score = (e: StationEvaluation): number => {
+    if (e.isOwnFlag || e.phase === 'confirmed') return 2;
+    if (e.phase === 'predicted') return 1;
+    return 0;
+  }
+  return [...evaluations].sort((a, b) => score(b) - score(a) || b.probability - a.probability)[0]
+}
 
 export default function App() {
+  const queryClient = useQueryClient()
+
   const stationsQuery = useQuery({ queryKey: ['demo-stations'], queryFn: api.stations, staleTime: Infinity })
-  const boundaryQuery = useQuery({
-    queryKey: ['catchment-boundary'],
-    queryFn: api.catchmentBoundary,
-    staleTime: Infinity,
+  const stateQuery = useQuery({ queryKey: ['demo-state'], queryFn: api.state, refetchInterval: POLL_INTERVAL_MS })
+  const forecastsQuery = useQuery({
+    queryKey: ['demo-forecasts'],
+    queryFn: api.forecasts,
+    refetchInterval: POLL_INTERVAL_MS,
   })
-  const configQuery = useQuery({ queryKey: ['demo-config'], queryFn: api.config, staleTime: Infinity })
-
-  const { latest, breached, toggleStation, reset } = useDemoTick()
-
-  const [selectedStationId, setSelectedStationId] = useState('STN-POWAI')
-  const [betaLactamAllergy, setBetaLactamAllergy] = useState(false)
-  const [renalImpairment, setRenalImpairment] = useState(false)
 
   const stations = stationsQuery.data ?? []
-  const readingByStation = useMemo(
-    () => new Map<string, StationReading>((latest?.stations ?? []).map((r) => [r.station_id, r])),
-    [latest],
-  )
-  const flaggedCount = latest?.stations.filter((s) => s.biohazard_flag_active).length ?? 0
-  const worstStation = useMemo(() => {
-    const flagged = (latest?.stations ?? []).filter((s) => s.biohazard_flag_active)
-    if (flagged.length === 0) return undefined
-    return flagged.reduce((worst, s) => (s.cci > worst.cci ? s : worst), flagged[0])
-  }, [latest])
-  const selectedStation = stations.find((s) => s.station_id === selectedStationId)
-  const selectedFlagged = readingByStation.get(selectedStationId)?.biohazard_flag_active ?? false
-  const biohazardThreshold = configQuery.data?.cci_biohazard_threshold ?? 25
+  const stationStates = stateQuery.data?.stations ?? []
+  const evaluations = stateQuery.data?.evaluations ?? []
+  const forecasts = forecastsQuery.data?.forecasts ?? []
+  const worst = useMemo(() => worstEvaluation(evaluations), [evaluations])
 
-  const cdsQuery = useCdsCard({
-    station: selectedStation,
-    betaLactamAllergy,
-    renalImpairment,
-    tick: latest?.tick,
+  const [selectedStationId, setSelectedStationId] = useState<string | undefined>(undefined)
+  const effectiveSelected = selectedStationId ?? stations[2]?.id // default: Parque Verde do Mondego
+
+  const selectedStation = stations.find((s) => s.id === effectiveSelected)
+  const cdsQuery = useQuery({
+    queryKey: ['cds-patient-view', effectiveSelected, evaluations.find((e) => e.stationId === effectiveSelected)?.phase],
+    queryFn: () => api.patientView(selectedStation!),
+    enabled: selectedStation !== undefined,
+    placeholderData: (previous) => previous,
   })
+
+  const handleToggleBreach = async (stationId: string, flagged: boolean) => {
+    await api.simulate({ stationId, flagged, severityIndex: 0.9, elapsedMinutes: 0 })
+    await queryClient.invalidateQueries({ queryKey: ['demo-state'] })
+    await queryClient.invalidateQueries({ queryKey: ['demo-forecasts'] })
+  }
+
+  const handleFastForward = async (minutes: number) => {
+    const flaggedStates = stationStates.filter((s) => s.flagged)
+    await Promise.all(
+      flaggedStates.map((s) => {
+        const currentElapsed = evaluations.find((e) => e.stationId === s.stationId)?.elapsedMinutes ?? 0
+        return api.simulate({
+          stationId: s.stationId,
+          flagged: true,
+          severityIndex: s.severityIndex,
+          elapsedMinutes: currentElapsed + minutes,
+        })
+      }),
+    )
+    await queryClient.invalidateQueries({ queryKey: ['demo-state'] })
+    await queryClient.invalidateQueries({ queryKey: ['demo-forecasts'] })
+  }
+
+  const handleReset = async () => {
+    await api.reset()
+    await queryClient.invalidateQueries({ queryKey: ['demo-state'] })
+    await queryClient.invalidateQueries({ queryKey: ['demo-forecasts'] })
+  }
 
   return (
     <div className="min-h-full">
-      <Header flaggedCount={flaggedCount} totalStations={stations.length} onReset={() => void reset()} />
-      <StatusHero
-        flaggedCount={flaggedCount}
-        totalStations={stations.length}
-        worstStation={worstStation}
-        biohazardThreshold={biohazardThreshold}
-      />
+      <Header />
+      <StatusHero stations={stations} worst={worst} />
       <DisclaimerBar />
 
       <main className="mx-auto max-w-7xl px-6 py-6">
@@ -72,59 +94,41 @@ export default function App() {
             <Reveal delay={0.05}>
               <Panel padded={false} className="overflow-hidden">
                 <div className="border-b border-border px-5 py-4">
-                  <PanelHeader title="River monitoring" subtitle="Mithi River corridor, Mumbai (illustrative)" />
-                </div>
-                <div className="h-[480px]">
-                  <RiverMap
-                    stations={stations}
-                    readings={latest?.stations ?? []}
-                    forecasts={latest?.forecast ?? []}
-                    boundary={boundaryQuery.data}
-                    selectedStationId={selectedStationId}
-                    onSelectStation={setSelectedStationId}
+                  <PanelHeader
+                    title="Monitored network"
+                    subtitle={`${stations.length} real Mondego landmarks, Coimbra (illustrative geometry)`}
                   />
                 </div>
-                <div className="border-t border-border px-5 py-4">
-                  <div className="mb-2 text-xs font-semibold tracking-wide text-ink-muted uppercase">
-                    Live ingest feed
-                  </div>
-                  <EventLog history={latest?.history ?? []} />
+                <div className="h-[460px]">
+                  <ReachMap
+                    stations={stations}
+                    evaluations={evaluations}
+                    selectedStationId={effectiveSelected}
+                    onSelectStation={setSelectedStationId}
+                  />
                 </div>
               </Panel>
             </Reveal>
 
-            <Reveal delay={0.12}>
+            <Reveal delay={0.1}>
               <Panel>
                 <PanelHeader
-                  title="Catchment Contamination Index"
-                  subtitle="Ecosystem-health trend, independent of any hospital alert"
+                  title="Predicted downstream impact"
+                  subtitle="Propagation forecast across the network -- illustrative model, not calibrated hydrology"
                 />
-                <CciTrendChart
-                  history={latest?.history ?? []}
-                  stations={stations}
-                  biohazardThreshold={biohazardThreshold}
-                />
+                <ForecastPanel forecasts={forecasts} stations={stations} />
               </Panel>
             </Reveal>
 
             <Reveal delay={0.15}>
               <Panel>
-                <PanelHeader
-                  title="Predicted downstream impact"
-                  subtitle="Propagation forecast -- illustrative model, not calibrated hydrology"
-                />
-                <ForecastPanel forecasts={latest?.forecast ?? []} />
-              </Panel>
-            </Reveal>
-
-            <Reveal delay={0.18}>
-              <Panel>
-                <PanelHeader title="Simulator controls" subtitle="Inject an acute sewage-backflow reading" />
-                <StationList
+                <PanelHeader title="Simulator controls" subtitle="Inject a biohazard event at any station" />
+                <SimulatorControls
                   stations={stations}
-                  readingByStation={readingByStation}
-                  breached={breached}
-                  onToggleBreach={toggleStation}
+                  states={stationStates}
+                  onToggleBreach={(id, flagged) => void handleToggleBreach(id, flagged)}
+                  onFastForward={(minutes) => void handleFastForward(minutes)}
+                  onReset={() => void handleReset()}
                 />
               </Panel>
             </Reveal>
@@ -138,27 +142,20 @@ export default function App() {
               </Panel>
             </Reveal>
 
-            <Reveal delay={0.14}>
+            <Reveal delay={0.12}>
               <Panel>
-                <PanelHeader title="Emergency department" subtitle="Triage Bay 3 -- demo patient" />
-                <TriageVitals flagged={selectedFlagged} />
+                <PanelHeader title="Patient context" />
+                <PatientStationPicker
+                  stations={stations}
+                  evaluations={evaluations}
+                  selectedStationId={effectiveSelected}
+                  onSelectStation={setSelectedStationId}
+                />
               </Panel>
             </Reveal>
 
-            <Reveal delay={0.2}>
-              <Panel>
-                <PanelHeader title="Patient context" />
-                <PatientControls
-                  stations={stations}
-                  readingByStation={readingByStation}
-                  selectedStationId={selectedStationId}
-                  onSelectStation={setSelectedStationId}
-                  betaLactamAllergy={betaLactamAllergy}
-                  onBetaLactamAllergyChange={setBetaLactamAllergy}
-                  renalImpairment={renalImpairment}
-                  onRenalImpairmentChange={setRenalImpairment}
-                />
-              </Panel>
+            <Reveal delay={0.16}>
+              <ProvenanceNote />
             </Reveal>
           </div>
         </div>

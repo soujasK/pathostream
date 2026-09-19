@@ -1,0 +1,28 @@
+{
+  "name": "oah-mondego",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Downstream contamination-propagation forecasting for the Mondego River (Coimbra, Portugal), serialized as FHIR R4 RiskAssessment predictions and served over an Express CDS Hooks (v3.0 ballot) service, in support of the EU-funded OneAquaHealth One Health surveillance mission.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/cdsHooks/server.ts",
+    "start": "tsx src/cdsHooks/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "@types/supertest": "^6.0.2",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^5.0.1"
+  }
+}

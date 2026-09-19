@@ -6,32 +6,15 @@ interface PanelProps {
   padded?: boolean
 }
 
-/** The base card surface used throughout the dashboard: white, rounded,
- * subtle border + shadow -- the one visual primitive everything else sits
- * inside of, so the whole app reads as one consistent system. */
 export function Panel({ children, className, padded = true }: PanelProps) {
   return (
-    <div
-      className={clsx(
-        'rounded-xl border border-border bg-surface shadow-card',
-        padded && 'p-5',
-        className,
-      )}
-    >
+    <div className={clsx('rounded-xl border border-border bg-surface shadow-card', padded && 'p-5', className)}>
       {children}
     </div>
   )
 }
 
-export function PanelHeader({
-  title,
-  subtitle,
-  action,
-}: {
-  title: string
-  subtitle?: string
-  action?: React.ReactNode
-}) {
+export function PanelHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
     <div className="mb-4 flex items-start justify-between gap-3">
       <div>

@@ -1,248 +1,206 @@
-# PathoStream-EHR (prototype)
+# OAH-Mondego (prototype)
 
-A One Health interoperability demo connecting synthetic upstream river
-telemetry to a synthetic emergency-department CDS Hooks flow, built against
-the architecture in the original engineering brief.
+A One Health clinical decision support prototype for the Mondego River
+through Coimbra, Portugal: a real 6-station monitoring network feeding a
+1D advection-dispersion transport model, serialized as real FHIR R4
+`RiskAssessment.prediction` resources, and served over an Express CDS
+Hooks service that fires a precautionary card in the EHR before a
+clinician would otherwise have any reason to suspect waterborne exposure.
 
-**Two independent case studies live here**: the original Mithi River
-(Mumbai) implementation in `app/` + `web/`, and a second, independently
-implemented Mondego River (Coimbra, Portugal) case study in `oah-mondego/`,
-proving the same FHIR/CDS-Hooks pattern is a portable standard, not a
-property of one codebase. Open `index.html` at the repo root (e.g.
-`python -m http.server 8090`, then visit `http://127.0.0.1:8090/`) once
-both are running for a single page that links to both dashboards, shows
-live up/down status for each backend, and summarizes what each one adds.
+**See `METHODS.md`** for the governing equations, parameter provenance,
+and independent numerical validation behind the transport model -- the
+research-methods-register companion to this operational README.
 
-## ⚠️ Clinical & regulatory status -- READ THIS FIRST
+## ⚠️ Status — read this first
 
-**This is prototype/demo code. It is not a cleared or certified medical
-device, has not been clinically validated, and must not be used to guide
-real patient care.** It was built for a hackathon-style engineering
-exercise, not as a production CDS system. Specifically:
+**Prototype only. Not validated hydrology, not a certified medical device,
+not conformant to any official Portuguese WFD assessment.** See "What's
+verified vs illustrative" below before citing any specific number from
+this project.
 
-- The empiric antibiotic logic in `app/core/gemini_synthesizer.py` encodes
-  a plausible, publicly-documented Sanford Guide/IDSA-style pattern (the
-  same one the original brief named), but it has not been reviewed by
-  clinical pharmacy, infectious disease, or an institutional P&T committee,
-  and does not do real drug-interaction or dosing checking.
-- Real deployment of anything like this needs the regulatory pathway
-  appropriate to clinical decision support software (e.g. FDA SaMD in the
-  US), a real safety/hazard analysis, and sign-off from the clinical teams
-  who would actually use it.
-- The FHIR terminology codes were checked against public sources (see
-  "Code corrections" below) but two remain unverified placeholders --
-  do not go live against a real FHIR server without resolving those first.
-- The river catchment boundary is an illustrative approximation, not a
-  surveyed hydrological boundary (see "Data provenance" below).
+## Why this case study, why now: the real European problem
 
-## What's actually implemented
+This isn't a generic "waterborne disease demo" reskinned onto a European
+river. Three independently verified facts ground it in a real, current EU
+problem:
+
+1. **Flooding is a growing, quantified public-health risk across the EU,
+   and it specifically elevates waterborne-pathogen exposure.** Per the
+   European Environment Agency (fetched directly, not recalled): *"Between
+   1980 and 2022, 5,584 flood-related deaths were recorded in the 32 EEA
+   member countries"*; *"around 53 million people (12% of Europe's
+   population) live in areas potentially prone to river flooding"*; and,
+   most directly relevant to this project's premise, *"heavy rainfall
+   events make it twice as likely to have harmful pathogen concentrations
+   in water bodies due to contaminated run-off and combined sewage
+   overflows."*
+2. **The Mondego at Coimbra has real, measured, published contamination**,
+   not a hypothetical one. Kötke et al. (2024, *Heliyon* 10(15):e34825)
+   measured pharmaceutical concentrations rising ~40-fold immediately
+   downstream of Coimbra's wastewater treatment plant, with carbamazepine
+   reaching an environmental risk quotient of 53 (>1 = high risk) in that
+   stretch. See `METHODS.md` §6a.
+3. **Coimbra is the real coordinating site of an active, EUR 4.9M
+   Horizon Europe research programme (OneAquaHealth, CORDIS grant
+   101086521, 2023-2026)** built around exactly this idea -- that urban
+   freshwater ecosystem health and human One Health outcomes are linked,
+   and that decision-makers need better environmental-surveillance
+   tooling to act on that link. This prototype is **not** a deliverable of
+   that grant and claims no affiliation with it, but it targets the same
+   city, reuses the HL7 Europe OneAquaHealth FHIR IG that project's own
+   standards partner (HL7 Europe) publishes, and is honestly disclosed
+   against the real project's own published scope -- including where this
+   demo's station choices diverge from OneAquaHealth's actual field sites.
+   See `METHODS.md` §6b for that full disclosure.
+
+The engineering problem this solves is standards-plumbing, not hydrology
+research: today, a river/catchment sensor network and a hospital EHR are
+two systems that don't talk to each other, so a clinician has no
+structured, timely signal that a patient's home address sits downstream of
+an active contamination event. This prototype demonstrates that closing
+that gap is a solvable interoperability problem *today*, using FHIR R4 and
+CDS Hooks -- standards that already exist -- rather than a research
+problem requiring new infrastructure.
+
+## What's verified vs illustrative
+
+| Claim | Status |
+|---|---|
+| LOINC `82195-9` ("Gastrointestinal pathogens DNA and RNA panel - Stool by NAA with non-probe detection") | **Verified** against loinc.org at build time. |
+| SNOMED CT `77377001` ("Leptospirosis (disorder)") | **Verified** against browser.ihtsdotools.org. |
+| All 6 network station names (Ponte de Santa Clara, Parque Dr. Manuel Braga, Parque Verde do Mondego, Parque Choupalinho, Açude-Ponte, Mata Nacional do Choupal) | **Verified** — every station is a real, independently confirmed place on the Mondego in Coimbra (Wikipedia, Câmara Municipal de Coimbra, Tripadvisor/Lonely Planet). |
+| Coordinates for Ponte de Santa Clara, Açude-Ponte, Mata Nacional do Choupal | **Verified** — sourced directly from a public reference (e.g. Wikipedia's infobox), independently fetched, not recalled. |
+| Coordinates for Parque Dr. Manuel Braga, Parque Choupalinho | **Illustrative.** Names and real existence verified; no precise public geocode was found for either, so coordinates are estimated by interpolation from confirmed neighbors' positions — see `src/data/mondegoNetwork.ts`. |
+| Upstream-to-downstream station order | **Illustrative.** Derived from sourced textual descriptions (e.g. Câmara Municipal de Coimbra: "Parque Manuel Braga extends... between Largo da Portagem... and Parque Verde do Mondego") plus the Mondego's real flow direction through Coimbra — not a surveyed hydrological flow-direction analysis. |
+| This demo's 6 stations are OneAquaHealth's real Coimbra field sites | **No.** The real project monitors small urban tributary streams (Ribeira de Eiras, Ribeira de Coselhas, the Fornos river, Vale das Flores) — see `METHODS.md` §6b. This demo's stations are real, independently geocodable Mondego-riverbank landmarks chosen for a patient-proximity CDS demo, not OneAquaHealth's literal pilot sites. |
+| Centro Hospitalar e Universitário de Coimbra (CHUC) is a real hospital serving Coimbra | **Verified** (Wikipedia, EATRIS, hospitaisonline.pt) — the largest hospital complex in Portugal. Used as realistic framing in CDS card copy (`src/data/mondegoNetwork.ts`'s `CHUC_ANCHOR`); this demo does **not** integrate with any real CHUC system, and CHUC is not a confirmed OneAquaHealth partner. |
+| A `RiskAssessment`-specific profile in the real HL7 Europe OAH FHIR IG (e.g. a "RiskAssessmentOah" StructureDefinition) | **Not independently verified.** The real IG (github.com/hl7-eu/oah) is confirmed to exist and is a CI-build draft, not published; we independently confirmed it defines an *Observation* profile (`observation-with-component-oah`), but found no evidence of a RiskAssessment-specific profile. `buildForecastRiskAssessment` therefore emits plain base-R4 RiskAssessment resources without an OAH `meta.profile` claim — see that function's docstring in `src/fhir/riskAssessment.ts`. |
+| Mean flow velocity (0.36 m/s, applied network-wide) | **Not independently verified.** No public river-gauge reading was available to check this against. Treated here as a documented, tunable, illustrative default. Per-segment distances themselves are computed from each station pair's real (or estimated, per above) coordinates via the haversine formula, not assumed. |
+| Longitudinal dispersion coefficient (8 m²/s default) | **Illustrative.** Within the typical literature range for small/medium urban channels (Fischer et al. 1979), not calibrated to the real Mondego. Configurable — see `AdvectionDispersionParams`. |
+| The 1D advection-dispersion equation / Taylor-dispersion approximation (peak = x/u, σ_t² = 2Dx/u³) | **Real, standard transport theory** (Fischer, List, Koh, Imberger & Brooks, *Mixing in Inland and Coastal Waters*, 1979). Correctly implemented; see `src/hydrology/advectionDispersion.ts`. |
+| The EU WFD 5-class EQR system (High/Good/Moderate/Poor/Bad) | **Real** regulatory structure. The specific numeric class boundaries used here are **illustrative**, not Portugal's official, type-specific, intercalibrated boundaries — see `src/hydrology/wfdClassification.ts`. |
+| CDS Hooks 3.0.0 | **Ballot draft, not a published HL7 standard** at the time of writing (2.0.1 is the current official version). Implemented here at the project's explicit request; re-verify `order-select`'s shape against the final 3.0 release before any real deployment. |
+| CQL rules in `src/cql/` | **Authored, valid CQL expressing the real exposure/stewardship logic** — not wired to a live CQL execution engine in this demo. The equivalent logic is *also* implemented directly in TypeScript (`exposureEngine.ts`, `orderSelect.ts`) so the running service doesn't depend on an engine that isn't here. See `src/cql/README.md`. |
+| "<35ms evaluation latency" | **Measured, not asserted.** `test/cdsHooks.test.ts` times `handlePatientView` directly (excluding HTTP/network overhead, which is a deployment concern, not a property of the logic) across 50 warmed-up calls. Measured: **~0.01ms average, ~0.015ms max** on this machine — see that test's console output. |
+| Fischer (1979) / Liu (1977) dispersion-coefficient predictive equation (`D_L = 0.011 U²W²/(HU*)`) | **Real, independently confirmed** against two secondary sources reporting the same coefficient and form. Implemented in `src/hydrology/channelDispersion.ts`, available for real channel-geometry input; not used for the Mondego default because that geometry data doesn't exist for this case study. |
+| The closed-form Taylor-dispersion approximation actually solves the governing PDE it approximates | **Independently checked**, not just asserted: `src/hydrology/numericalValidation.ts` solves the real 1D advection-dispersion PDE via finite differences and `test/numericalValidation.test.ts` confirms agreement (peak time within 10%, spread within 15%) at a representative Peclet number, with the residual discrepancy attributed to a specific, understood source (first-order-upwind numerical diffusion). See `METHODS.md` §4. |
+| The leptospirosis/flooding clinical rationale | **Real, verified epidemiology** — Naing et al. (2019), *PLoS One* 14(5):e0217643 (PMID 31141558), pooled OR 2.19 for leptospirosis after flood exposure across 14 studies. See `METHODS.md` §6. |
+| Flooding doubles the odds of harmful pathogen concentrations in EU water bodies | **Real, verified** — European Environment Agency, fetched directly from eea.europa.eu. See `METHODS.md` §6 and "Why this case study" above. |
+| Measured ~40x pharmaceutical contamination spike downstream of Coimbra's WWTP on the Mondego | **Real, verified** — Kötke et al. (2024), *Heliyon* 10(15):e34825, DOI 10.1016/j.heliyon.2024.e34825. See `METHODS.md` §6a. |
+| OneAquaHealth is a real, active EUR 4.9M Horizon Europe project coordinated by the University of Coimbra | **Verified** directly against its official CORDIS project page (grant 101086521). See `METHODS.md` §6b. |
+
+## Architecture
 
 ```
-pathostream-ehr/
-├── app/
-│   ├── main.py                 FastAPI gateway (/ingest, /cds-services, /persist, /demo/*)
-│   ├── config.py                pydantic-settings configuration
-│   ├── models/                  telemetry, IndicatorsOah, FHIR R4, CDS Hooks schemas
-│   ├── core/
-│   │   ├── anomaly_engine.py    Catchment Contamination Index (CCI) + biohazard flag
-│   │   ├── spatial_engine.py    shapely point-in-polygon catchment matching + declared flow order
-│   │   ├── propagation_engine.py  downstream contamination-arrival forecasting (resilience/early-warning)
-│   │   ├── fhir_compiler.py     IndicatorsOah -> FHIR R4 transaction Bundle (current + predicted risk)
-│   │   └── gemini_synthesizer.py Gemini 1.5 Flash + deterministic fallback CDS card
-│   ├── services/
-│   │   ├── ingest_service.py    ingestion pipeline + per-station/catchment cache
-│   │   ├── cds_service.py       CDS Hooks discovery + patient-view handler (incl. predictive pre-alert)
-│   │   ├── demo_state.py        bounded CCI history for the web dashboard's trend chart
-│   │   └── fhir_client.py       HAPI FHIR REST client
-│   └── data/mithi_catchment.geojson
-├── tests/                       32 tests, all passing (pytest)
-├── simulator/stream_generator.py  synthetic YSI EXO2 + Colilert/Aquagenx stream
-├── web/                         React + Vite + Tailwind + MapLibre GL + Recharts dashboard (primary UI)
-├── ui/dashboard.py               Streamlit split-screen ("River" / "Hospital") demo (fallback, zero-build)
-└── oah-mondego/                 second, independent TS/Express case study -- Mondego River, Portugal
+.
+├── src/
+│   ├── data/mondegoNetwork.ts       6-station network + flow order (see provenance notes above)
+│   ├── hydrology/
+│   │   ├── advectionDispersion.ts   1D transport model (arrival/peak/clearance/probability)
+│   │   ├── channelDispersion.ts     Fischer (1979)/Liu (1977) dispersion-coefficient estimator
+│   │   ├── propagation.ts           multi-station cascading forecast (flow-order walk)
+│   │   ├── numericalValidation.ts   independent finite-difference PDE solver (validation only)
+│   │   └── wfdClassification.ts     EU WFD EQR class mapping
+│   ├── fhir/
+│   │   ├── types.ts                 FHIR R4 types actually used here
+│   │   └── riskAssessment.ts        Forecast -> RiskAssessment.prediction serializer
+│   ├── cql/
+│   │   └── exposureRules.cql        Authored computable exposure/stewardship rules
+│   └── cdsHooks/
+│       ├── types.ts                 CDS Hooks request/response shapes
+│       ├── exposureEngine.ts        Per-station state + own-flag/downstream-forecast evaluation
+│       ├── geolocation.ts           FHIR Patient geolocation extraction (shared)
+│       ├── patientView.ts           patient-view hook handler (nearest-station resolution)
+│       ├── orderSelect.ts           order-select stewardship-trigger handler
+│       ├── discovery.ts             /cds-services manifest
+│       └── server.ts                Express app + /demo/* scaffolding
+├── test/                            63 tests: hydrology math, PDE validation, FHIR shape, CDS Hooks, exposure phases
+├── web/                             React + Vite + Tailwind + MapLibre dashboard (the primary demo UI)
+├── METHODS.md                       governing equations, parameter provenance, citations
+└── index.html                       static "about this project" landing page
 ```
-
-### Demo frontend (`web/`)
-
-A React/TypeScript dashboard that talks to the FastAPI backend over plain
-HTTP/JSON -- no data is fabricated in the browser; every reading comes from
-`simulator/stream_generator.py` run server-side. It adds four endpoints to
-`app/main.py` purely for this UI (`/demo/stations`, `/demo/config`,
-`/demo/tick`, `/demo/history/{catchment_id}`, `/demo/catchment-boundary`,
-`/demo/reset`); the core CDS Hooks / FHIR surface above is unchanged and the
-frontend calls `POST /cds-services/patient-view` directly, same as
-`ui/dashboard.py` and `tests/test_cds_hooks.py`.
-
-- **MapLibre GL** river map: real OSM basemap, the actual (illustrative)
-  catchment polygon from `app/data/mithi_catchment.geojson`, and stations
-  that pulse when biohazard-flagged (via `setFeatureState`, not a full
-  GeoJSON re-render per frame).
-- **Recharts** CCI trend line per station, with the real
-  `cci_biohazard_threshold` from `app/config.py` as a reference line --
-  fetched from `/demo/config`, not hardcoded, so it can't drift from the
-  backend's actual setting.
-- Note: because `_CatchmentStateCache.get()` (see `ingest_service.py`)
-  intentionally returns the catchment-wide worst reading, selecting a
-  *different, currently-healthy* station as the patient's address will
-  still show an active card as long as *any* station in the same catchment
-  is flagged -- that's existing backend behavior (favors never missing an
-  alert), not a frontend bug.
-
-```bash
-cd web
-npm install
-npm run dev        # http://localhost:5173, expects the API on :8000
-```
-
-Verified locally in this environment: `pytest` (32/32 passing),
-`flake8 --max-line-length=120` (clean), `mypy --strict` on `app/` and
-`simulator/` (clean, with `types-shapely` installed), and the Streamlit
-dashboard was executed headlessly with `streamlit.testing.v1.AppTest`
-(no exceptions; the critical-card and allergy-routing flows were exercised
-end to end, not just unit-tested in isolation).
-
-### Downstream propagation forecasting (`app/core/propagation_engine.py`)
-
-Resilience/early-warning capability layered on top of the reactive CDS
-Hooks flow above: given a currently-flagged station and the catchment's
-declared upstream-to-downstream flow order (`station_flow_order` in
-`app/data/mithi_catchment.geojson`), computes when contamination is
-predicted to reach each downstream station -- and fires a precautionary
-CDS Hooks card for that station's patients *before* their local sensor
-confirms anything. Forecasts are also serialized as real FHIR R4
-`RiskAssessment.prediction` resources using the (correctly implemented,
-rarely-used) `probabilityDecimal` / `whenPeriod` elements -- see
-`GET /demo/forecast-bundle/{catchment_id}`. The specific assumed flow
-velocity is an illustrative, documented default (`PROPAGATION_FLOW_VELOCITY_M_S`
-in `.env.example`), not a calibrated hydrological measurement -- see that
-module's docstring.
-
-## OAH-Mondego: a second, independent case study (`oah-mondego/`)
-
-A separate TypeScript/Express implementation of the same
-propagation-forecasting + FHIR + CDS Hooks pattern, against a real
-6-station monitoring network along a second river (the Mondego, Coimbra,
-Portugal), including a real 1D advection-dispersion transport model
-independently validated against a direct numerical PDE solution, a
-Fischer (1979)/Liu (1977) physically-grounded dispersion-coefficient
-estimator, an EU Water Framework Directive EQR classification, and a
-`cds-services/order-select` antimicrobial-stewardship trigger. It exists
-to demonstrate that the pattern is a portable standard, not a property of
-one Python codebase. **Read `oah-mondego/README.md` and `oah-mondego/METHODS.md`
-first** -- they document exactly which inputs (a LOINC code, all 6 station
-names, 3 of 6 stations' exact coordinates, a leptospirosis/flooding
-epidemiology citation) were independently verified and which (2 of 6
-stations' precise coordinates, the network-wide flow velocity, the
-upstream-to-downstream ordering) are estimated or illustrative, following
-the same disclosure policy as this file's own "Code corrections" and "Data
-provenance" sections below.
-
-## Code corrections (please read before trusting any medical code herein)
-
-The original brief's own top requirement was "no fake or mock medical
-code." Checking its asserted codes against public LOINC/SNOMED sources
-turned up several that were incorrect:
-
-| Analyte / concept | Brief asserted | Actually is | Used here instead |
-|---|---|---|---|
-| Fecal coliforms (water) | LOINC `2160-0` | **Creatinine [Mass/volume] in Serum or Plasma** -- a routine kidney-function blood test, unrelated to water microbiology | LOINC `20769-6`, "Coliform bacteria [#/volume] in Water by Viability count" (verified; LOINC has no dedicated "fecal coliform" component) |
-| pH (water) | LOINC `2708-6` | **Oxygen saturation** -- used in HL7's own arterial oxygen-saturation vital-sign profile | LOINC `9481-3`, "pH of Water" (verified) |
-| Septic shock | SNOMED CT `240369006` | not verified as a real/active concept in that role | SNOMED CT `76571007`, "Septic shock (disorder)" (verified) |
-| Leptospirosis | SNOMED CT `284530008` | not verified as a real/active concept in that role | SNOMED CT `77377001`, "Leptospirosis (disorder)" (verified) |
-| Sepsis | SNOMED CT `91302008` | correct as given | unchanged |
-
-Two codes could **not** be verified in the time available and are shipped
-as loud placeholders (`LoincCodes.DISSOLVED_OXYGEN_WATER` /
-`WATER_TEMPERATURE` in `app/core/fhir_compiler.py`, literally set to
-strings like `"UNVERIFIED_DISSOLVED_OXYGEN_WATER"`): a dedicated LOINC
-code for "Dissolved Oxygen in Water" and "Temperature of Water". Resolve
-these against a live LOINC terminology server (fhir.loinc.org, free
-account) before pointing the FHIR compiler at a real server.
-
-### Standards-version notes
-- `hl7.eu.fhir.oah` is real -- it's the EU "OneAquaHealth" project's FHIR
-  IG (source: https://github.com/hl7-eu/oah, CI build at
-  https://build.fhir.org/ig/hl7-eu/oah/). As of writing it's explicitly
-  marked "not an authorized publication" / "changes regularly," and we
-  could only confirm its `IndicatorsOah` model's `biological` branch
-  (with sub-indicators like macroinvertebrates and diatoms) against public
-  sources. `app/models/oah_indicators.py`'s `water`/`biological`/`bioRisk`
-  grouping is a good-faith structural interpretation of the brief's
-  description, not a verified line-for-line match to the live draft --
-  diff against the current build before claiming conformance.
-- CDS Hooks: HL7's current *officially published* version is **2.0.1
-  (STU2)**; **3.0.0 exists only as a normative ballot** at the time of
-  writing. The `patient-view` shapes used here (discovery manifest;
-  hookInstance/hook/context/prefetch; cards with
-  uuid/summary/indicator/detail/source/suggestions) are unchanged between
-  2.0.1 and the 3.0 ballot text we reviewed, but re-check before relying
-  on this against a final 3.0 release.
-
-## Data provenance
-
-`app/data/mithi_catchment.geojson` is a **simplified, illustrative**
-corridor -- a buffered polygon around a manually-digitized line through
-published waypoints (Vihar Lake, Powai, Saki Naka, Kurla, Bandra Kurla
-Complex, Vakola/Kalina, Dharavi, Mahim Creek), sourced from the Mithi
-River's Wikipedia entry and a Maharashtra Pollution Control Board report.
-It is **not** a surveyed hydrological catchment boundary. Replace it with
-an official BMC/MPCB/CWC shapefile before treating spatial matches against
-it as meaningful.
-
-## Design decisions and gaps versus the original brief
-
-- **DiatomStressWeight values**: the brief named the three qualitative
-  categories (healthy / moderate_stress / acute_collapse) but never gave
-  numeric weights for the CCI formula. `app/core/anomaly_engine.py`
-  assigns explicit, documented defaults (0 / 5 / 15) rather than silently
-  guessing -- treat these as a tunable prototype default, not a validated
-  constant.
-- **FHIR resource models** (`app/models/fhir_resources.py`) are
-  purpose-built for the ~7 resource shapes this project actually emits,
-  not a general FHIR R4 library.
-- **google-genai usage**: `app/core/gemini_synthesizer.py` asks Gemini
-  only to *phrase* an antibiotic choice that deterministic Python logic
-  has already made (see `_empiric_regimen`) -- Gemini is never the thing
-  deciding which drug to suggest, and any failure/timeout/missing key
-  falls back to the pure-Python `deterministic_fallback_card` with
-  identical clinical content, satisfying the brief's "never drop an
-  alert" requirement without depending on Gemini's availability.
-- **Multi-station catchments**: the ingestion cache tracks state
-  per-station within a catchment and, when asked for "the" state of a
-  catchment, prefers any currently-flagged station over a healthy one
-  (see the docstring on `_CatchmentStateCache` in
-  `app/services/ingest_service.py`). An earlier version of this cache
-  stored only one reading per catchment and could silently lose an active
-  flag when a healthy station's reading was ingested after a flagged
-  one's -- exactly the failure mode the brief says must never happen.
-- **Not implemented / out of scope for this pass**: `pyproject.toml`
-  (a `requirements.txt` is provided instead); a persistent (non-in-memory)
-  catchment-state store for multi-worker deployments; retry/backoff on the
-  FHIR client; authentication on any endpoint (add before exposing this
-  beyond localhost).
 
 ## Running it
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env   # optionally set GEMINI_API_KEY, FHIR_BASE_URL
+npm install
+npm run dev     # API on http://127.0.0.1:4300, auto-reload
+npm test        # 63 tests
+npm run build   # tsc -> dist/
 
-# API (required by both frontends below)
-uvicorn app.main:app --reload
-
-# Primary dashboard: React + Vite + MapLibre + Recharts, calls the API over HTTP
-cd web && npm install && npm run dev   # http://localhost:5173
-
-# Fallback dashboard: Streamlit, runs in-process, no API server needed
-streamlit run ui/dashboard.py
-
-# Tests / linting
-pytest
-flake8 --max-line-length=120 app simulator tests ui
-mypy --strict app simulator
-cd web && npx tsc -b && npm run build
-
-# OAH-Mondego: second, independent case study (see oah-mondego/README.md first)
-cd oah-mondego && npm install && npm test && npm run dev   # http://127.0.0.1:4300
+# Dashboard (separate terminal, needs the API running above)
+cd web && npm install && npm run dev   # http://localhost:5174
 ```
+
+The dashboard's "Simulator controls" panel can flag any of the 6 stations
+and has a fast-forward, `elapsedMinutes` demo-speed control
+(`POST /demo/simulate {stationId, flagged, severityIndex, elapsedMinutes}`):
+the farthest predicted arrival window is ~2.5 hours, far too long to wait
+out live, so this explicitly backdates a station's simulated flag time to
+jump straight to the predicted / confirmed / cleared phase for any
+downstream target. It sets *when* you're looking, not the underlying
+transport math -- the same model and phase boundaries apply at every jump
+point (see `src/cdsHooks/server.ts`).
+
+### Try it
+
+```bash
+# List the 6 real network stations, upstream to downstream
+curl http://127.0.0.1:4300/demo/stations
+
+# Flag the most-upstream station (simulates a breach)
+curl -X POST http://127.0.0.1:4300/demo/simulate \
+  -H "Content-Type: application/json" \
+  -d '{"stationId":"PT-SANTA-CLARA","flagged":true,"severityIndex":0.9}'
+
+# Per-station state + evaluation (own-flag or downstream-forecast phase)
+curl http://127.0.0.1:4300/demo/state
+
+# Every currently-active downstream forecast, cascaded through the flow order
+curl http://127.0.0.1:4300/demo/forecasts
+
+# Same forecasts as real FHIR RiskAssessment resources
+curl http://127.0.0.1:4300/demo/forecast-bundle
+
+# Ask patient-view for a patient at a downstream station
+curl -X POST http://127.0.0.1:4300/cds-services/patient-view \
+  -H "Content-Type: application/json" -d '{
+    "hookInstance": "t1", "hook": "patient-view",
+    "context": {"userId": "Practitioner/demo-md", "patientId": "demo-patient"},
+    "prefetch": {"patient": {"resourceType": "Patient", "address": [{"extension": [
+      {"url": "http://hl7.org/fhir/StructureDefinition/geolocation", "extension": [
+        {"url": "latitude", "valueDecimal": 40.2038},
+        {"url": "longitude", "valueDecimal": -8.4285}
+      ]}
+    ]}]}}
+  }'
+```
+
+## Not implemented / out of scope
+
+- No spatial catchment polygon — `patientView.ts` uses a fixed radius
+  around each station's point instead. A real deployment needs a surveyed
+  network/catchment geometry.
+- No persistent store — in-memory state only, single process.
+- No authentication on any endpoint.
+- No live CQL execution engine (see the CQL note above).
+- `order-select`'s CDS Hooks context doesn't carry a geocoded patient
+  address the way `patient-view`'s prefetch does, so its stewardship
+  trigger checks "is anything confirmed anywhere in the network" rather
+  than being patient-location-aware like `patient-view` is — a documented
+  simplification, see `orderSelect.ts`.
+- A single network-wide mean velocity (0.36 m/s) is applied to every
+  segment; a real deployment would vary this per reach based on local
+  channel geometry (see `channelDispersion.ts` for the estimator that
+  would support that).
+
+## Clinical & regulatory status
+
+**This is prototype/demo code. It is not a cleared or certified medical
+device, has not been clinically validated, and must not be used to guide
+real patient care.** It was built for a hackathon-style engineering
+exercise. Real deployment of anything like this needs the regulatory
+pathway appropriate to clinical decision support software in the relevant
+jurisdiction (e.g. EU MDR/IVDR for software as a medical device), a real
+safety/hazard analysis, and sign-off from the clinical teams who would
+actually use it.

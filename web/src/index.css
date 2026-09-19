@@ -4,19 +4,21 @@
 @theme {
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  /* Clinical brand scale (teal) */
-  --color-brand-50: #f0fdfa;
-  --color-brand-100: #ccfbf1;
-  --color-brand-200: #99f6e4;
-  --color-brand-300: #5eead4;
-  --color-brand-400: #2dd4bf;
-  --color-brand-500: #14b8a6;
-  --color-brand-600: #0d9488;
-  --color-brand-700: #0f766e;
-  --color-brand-800: #115e59;
-  --color-brand-900: #134e4a;
+  /* EU-blue brand scale, echoing the EU flag's blue field. */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
 
-  /* Semantic status colors, shared by the map, badges, and CDS cards */
+  /* EU flag gold, used sparingly as an accent (WFD/EHDS badges). */
+  --color-eu-gold: #ffd700;
+
   --color-healthy: #059669;
   --color-healthy-bg: #ecfdf5;
   --color-healthy-border: #a7f3d0;
@@ -30,7 +32,6 @@
   --color-info-bg: #eff6ff;
   --color-info-border: #bfdbfe;
 
-  /* Neutral surface scale */
   --color-surface: #ffffff;
   --color-surface-muted: #f8fafc;
   --color-surface-sunken: #f1f5f9;
@@ -40,7 +41,6 @@
   --color-ink-faint: #94a3b8;
 
   --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06);
-  --shadow-card-lg: 0 4px 6px -1px rgb(15 23 42 / 0.06), 0 10px 15px -3px rgb(15 23 42 / 0.08);
 }
 
 html,
@@ -56,7 +56,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* MapLibre canvas should fill its rounded container without square corners bleeding through */
 .maplibregl-map {
   border-radius: inherit;
 }
@@ -64,7 +63,6 @@ body {
 .maplibregl-popup-content {
   font-family: var(--font-sans);
   border-radius: 8px;
-  box-shadow: var(--shadow-card-lg);
 }
 
 ::-webkit-scrollbar {

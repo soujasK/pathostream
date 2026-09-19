@@ -1,62 +1,83 @@
-// Mirrors the Pydantic response models in app/main.py and app/models/cds_hooks.py.
-// Keep these in sync by hand -- there is no shared schema generation step (yet).
+// Mirrors the TypeScript types in ../src/cdsHooks/*.ts,
+// ../src/data/mondegoNetwork.ts and ../src/hydrology/*.ts.
+// Kept in sync by hand.
 
-export interface DemoConfig {
-  cci_biohazard_threshold: number
-}
-
-export interface StationInfo {
-  station_id: string
+export interface NetworkStation {
+  id: string
+  name: string
   latitude: number
   longitude: number
+  verified: boolean
+  coordinatesEstimated?: boolean
+  verificationNote: string
 }
 
-export interface StationReading {
-  station_id: string
-  latitude: number
-  longitude: number
-  cci: number
-  biohazard_flag_active: boolean
-  rationale: string
-  observed_at: string
+export interface TransportForecast {
+  distanceKm: number
+  peakTimeMinutes: number
+  arrivalTimeMinutes: number
+  clearanceTimeMinutes: number
+  temporalSpreadMinutes: number
+  dispersionCoefficientM2S: number
 }
 
-export interface HistoryPoint {
-  tick: number
-  station_id: string
-  cci: number
-  biohazard_flag_active: boolean
-  observed_at: string
+export type WfdEcologicalStatusClass = 'High' | 'Good' | 'Moderate' | 'Poor' | 'Bad'
+
+export interface WfdClassification {
+  eqrClass: WfdEcologicalStatusClass
+  indicativeEqr: number
+  note: string
 }
 
-export interface ForecastEntry {
-  source_station_id: string
-  target_station_id: string
-  distance_km: number
-  eta_minutes: number
+export type ExposurePhase = 'predicted' | 'confirmed' | 'cleared'
+
+export interface StationEvaluation {
+  stationId: string
+  phase: ExposurePhase
+  isOwnFlag: boolean
+  sourceStationId: string
+  wfd: WfdClassification
+  elapsedMinutes: number
   probability: number
+  forecast?: TransportForecast
 }
 
-export interface DemoTickResponse {
-  catchment_id: string
-  tick: number
-  stations: StationReading[]
-  history: HistoryPoint[]
-  forecast: ForecastEntry[]
+export interface StationState {
+  stationId: string
+  flagged: boolean
+  severityIndex: number
+  flaggedAt: string | null
+}
+
+export interface DemoStateResponse {
+  catchmentId: string
+  stations: StationState[]
+  evaluations: StationEvaluation[]
+}
+
+export interface NetworkForecast {
+  sourceStationId: string
+  targetStationId: string
+  transport: TransportForecast
+}
+
+export interface DemoForecastsResponse {
+  catchmentId: string
+  forecasts: NetworkForecast[]
 }
 
 export type CdsIndicator = 'info' | 'warning' | 'critical'
 
 export interface CardSource {
   label: string
-  url: string | null
-  icon: string | null
+  url?: string
+  icon?: string
 }
 
 export interface SuggestionAction {
   type: 'create' | 'update' | 'delete'
   description: string
-  resource: Record<string, unknown> | null
+  resource?: Record<string, unknown>
 }
 
 export interface Suggestion {
@@ -76,16 +97,4 @@ export interface Card {
 
 export interface CdsHookResponse {
   cards: Card[]
-}
-
-export interface CatchmentBoundary {
-  type: 'FeatureCollection'
-  features: Array<{
-    type: 'Feature'
-    properties: Record<string, unknown>
-    geometry: {
-      type: string
-      coordinates: unknown
-    }
-  }>
 }

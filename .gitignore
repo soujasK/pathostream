@@ -1,15 +1,9 @@
-# Python
-.venv/
-__pycache__/
-*.pyc
-.mypy_cache/
-.pytest_cache/
-
-# Environment
-.env
-
-# Node (web/ has its own, more complete .gitignore; this covers root-level greps)
+# Node (web/ has its own, more complete .gitignore; this covers the root TS project)
 node_modules/
+dist/
+
+# Leftover local venv from before the project was restructured to be Node/TS-only
+.venv/
 
 # Editor / OS
 .vscode/
