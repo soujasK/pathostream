@@ -1,6 +1,6 @@
 // Mirrors the TypeScript types in ../src/cdsHooks/*.ts,
-// ../src/data/mondegoNetwork.ts and ../src/hydrology/*.ts.
-// Kept in sync by hand.
+// ../src/data/mondegoNetwork.ts, ../src/data/douroNetwork.ts and
+// ../src/hydrology/*.ts. Kept in sync by hand.
 
 export interface NetworkStation {
   id: string
@@ -10,6 +10,8 @@ export interface NetworkStation {
   verified: boolean
   coordinatesEstimated?: boolean
   verificationNote: string
+  /** Present only on the cross-border Douro network's stations. */
+  country?: 'ES' | 'PT'
 }
 
 export interface TransportForecast {

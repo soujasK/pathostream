@@ -8,21 +8,99 @@ import {
   injectTelemetryEvent,
   resetAllTelemetry,
 } from "../analytics/earlyWarningEngine.js";
-import { MONDEGO_CATCHMENT_ID, MONDEGO_STATIONS, stationById } from "../data/mondegoNetwork.js";
+import { DOURO_CATCHMENT_ID, DOURO_MEAN_VELOCITY_MS, DOURO_STATIONS, douroStationById } from "../data/douroNetwork.js";
+import { MONDEGO_CATCHMENT_ID, MONDEGO_STATIONS, type NetworkStation, stationById } from "../data/mondegoNetwork.js";
 import { buildForecastRiskAssessment } from "../fhir/riskAssessment.js";
 import { discoveryManifest } from "./discovery.js";
-import {
-  evaluateStationExposure,
-  getActiveForecasts,
-  getAllStationStates,
-  resetAllStations,
-  setStationState,
-} from "./exposureEngine.js";
+import { douroEngine } from "./douroExposureEngine.js";
+import { mondegoEngine, type ExposureEngine } from "./exposureEngine.js";
 import { handleOrderSelect } from "./orderSelect.js";
 import { handlePatientView } from "./patientView.js";
 import type { OrderSelectRequest, PatientViewRequest } from "./types.js";
 
 const NETWORK_MEAN_VELOCITY_MS = 0.36;
+
+interface CatchmentRouteOptions {
+  prefix: string;
+  catchmentId: string;
+  stations: NetworkStation[];
+  findStation: (id: string) => NetworkStation | undefined;
+  engine: ExposureEngine;
+  meanVelocityMs: number;
+  /** Extra side effect to run when this catchment's /reset is called --
+   * used only for Mondego's un-prefixed /demo/reset, which has always
+   * also cleared the (network-agnostic) telemetry layer; see that call
+   * site for why Douro's own /demo/douro/reset does not do the same. */
+  onReset?: () => void;
+}
+
+/** Registers the same generic /demo/:catchment/* route family for any
+ * network + its exposure engine -- used once for Mondego (kept at the
+ * original un-prefixed /demo/* paths for backward compatibility with
+ * every existing test/caller) and once for Douro (under /demo/douro/*),
+ * rather than hand-duplicating five routes per network. */
+function registerCatchmentRoutes(app: ReturnType<typeof express>, options: CatchmentRouteOptions) {
+  const { prefix, catchmentId, stations, findStation, engine, meanVelocityMs, onReset } = options;
+
+  app.get(`${prefix}/stations`, (_req: Request, res: Response) => {
+    res.json(stations);
+  });
+
+  app.post(`${prefix}/simulate`, (req: Request, res: Response) => {
+    const body = req.body as { stationId?: string; flagged?: boolean; severityIndex?: number; elapsedMinutes?: number };
+    if (!body.stationId || !findStation(body.stationId)) {
+      res.status(400).json({ error: `Unknown stationId '${body.stationId}'` });
+      return;
+    }
+    const flaggedAt = new Date(Date.now() - (body.elapsedMinutes ?? 0) * 60_000);
+    const state = engine.setStationState(body.stationId, body.flagged ?? true, body.severityIndex ?? 0.8, flaggedAt);
+    res.json({ stationId: body.stationId, ...state });
+  });
+
+  app.post(`${prefix}/reset`, (_req: Request, res: Response) => {
+    engine.resetAllStations();
+    onReset?.();
+    res.json({ status: "reset" });
+  });
+
+  app.get(`${prefix}/state`, (_req: Request, res: Response) => {
+    const states = Array.from(engine.getAllStationStates().entries()).map(([stationId, state]) => ({
+      stationId,
+      ...state,
+    }));
+    const evaluations = stations.map((s) => engine.evaluateStationExposure(s.id)).filter((e) => e !== null);
+    res.json({ catchmentId, stations: states, evaluations });
+  });
+
+  app.get(`${prefix}/forecasts`, (_req: Request, res: Response) => {
+    const forecasts = engine.getActiveForecasts().map((f) => ({
+      sourceStationId: f.sourceStationId,
+      targetStationId: f.targetStationId,
+      transport: f.transport,
+    }));
+    res.json({ catchmentId, forecasts });
+  });
+
+  app.get(`${prefix}/forecast-bundle`, (_req: Request, res: Response) => {
+    const now = new Date();
+    const entries = engine.getActiveForecasts().flatMap((f) => {
+      const evaluation = engine.evaluateStationExposure(f.targetStationId);
+      if (!evaluation || evaluation.isOwnFlag || evaluation.sourceStationId !== f.sourceStationId) return [];
+
+      const resource = buildForecastRiskAssessment({
+        source: findStation(f.sourceStationId)!,
+        target: findStation(f.targetStationId)!,
+        forecast: f.transport,
+        wfd: evaluation.wfd,
+        meanVelocityMs,
+        probability: evaluation.probability,
+        now,
+      });
+      return [{ resource }];
+    });
+    res.json({ resourceType: "Bundle", type: "collection", entry: entries });
+  });
+}
 
 export function createServer() {
   const app = express();
@@ -47,54 +125,55 @@ export function createServer() {
     res.json(handleOrderSelect(request));
   });
 
-  // --- Demo-only scaffolding, mirrors the sibling Python service's
-  // /demo/* endpoints: real backend state a demo frontend can drive,
-  // nothing fabricated in a browser. ---
+  // --- Demo-only scaffolding: real backend state a demo frontend can
+  // drive, nothing fabricated in a browser. Registered once for Mondego
+  // (kept at the original un-prefixed /demo/* paths for backward
+  // compatibility with every existing test/caller) and once for the
+  // cross-border Douro network, from the exact same generic route
+  // registrar and exposure-engine factory -- see registerCatchmentRoutes
+  // above and exposureEngine.ts's docstring. ---
 
-  app.get("/demo/stations", (_req: Request, res: Response) => {
-    res.json(MONDEGO_STATIONS);
+  registerCatchmentRoutes(app, {
+    prefix: "/demo",
+    catchmentId: MONDEGO_CATCHMENT_ID,
+    stations: MONDEGO_STATIONS,
+    findStation: stationById,
+    engine: mondegoEngine,
+    meanVelocityMs: NETWORK_MEAN_VELOCITY_MS,
+    onReset: resetAllTelemetry,
   });
 
-  app.post("/demo/simulate", (req: Request, res: Response) => {
-    const body = req.body as { stationId?: string; flagged?: boolean; severityIndex?: number; elapsedMinutes?: number };
-    if (!body.stationId || !stationById(body.stationId)) {
-      res.status(400).json({ error: `Unknown stationId '${body.stationId}'` });
-      return;
-    }
-    // `elapsedMinutes` explicitly backdates the simulated flag time so a
-    // demo can jump straight to the predicted/confirmed/cleared phase
-    // without waiting out the real transport window. This sets the CLOCK,
-    // not the science -- the same transport model and phase boundaries
-    // apply regardless of which phase you jump to.
-    const flaggedAt = new Date(Date.now() - (body.elapsedMinutes ?? 0) * 60_000);
-    const state = setStationState(body.stationId, body.flagged ?? true, body.severityIndex ?? 0.8, flaggedAt);
-    res.json({ stationId: body.stationId, ...state });
-  });
-
-  app.post("/demo/reset", (_req: Request, res: Response) => {
-    resetAllStations();
-    resetAllTelemetry();
-    res.json({ status: "reset" });
+  registerCatchmentRoutes(app, {
+    prefix: "/demo/douro",
+    catchmentId: DOURO_CATCHMENT_ID,
+    stations: DOURO_STATIONS,
+    findStation: douroStationById,
+    engine: douroEngine,
+    meanVelocityMs: DOURO_MEAN_VELOCITY_MS,
   });
 
   // --- Statistical early-warning layer: a real EWMA control chart
   // (src/analytics/ewma.ts) monitoring a synthetic noisy per-station
   // telemetry signal (src/analytics/telemetryStream.ts). Deliberately
-  // independent of the exposure engine above -- see that module's
-  // docstring and README's "Two independent signals" note. ---
+  // independent of the exposure engine(s) above, and network-agnostic --
+  // one shared registry covers every station across both catchments (see
+  // earlyWarningEngine.ts's docstring and README's "Two independent
+  // signals" note). ---
+
+  const findAnyStation = (id: string): NetworkStation | undefined => stationById(id) ?? douroStationById(id);
 
   app.get("/demo/telemetry", (_req: Request, res: Response) => {
-    res.json({ catchmentId: MONDEGO_CATCHMENT_ID, stations: getAllEarlyWarningStates() });
+    res.json({ stations: getAllEarlyWarningStates() });
   });
 
   app.post("/demo/telemetry/tick", (_req: Request, res: Response) => {
     const stations = advanceAllStations();
-    res.json({ catchmentId: MONDEGO_CATCHMENT_ID, stations });
+    res.json({ stations });
   });
 
   app.post("/demo/telemetry/inject", (req: Request, res: Response) => {
     const body = req.body as { stationId?: string };
-    if (!body.stationId || !stationById(body.stationId)) {
+    if (!body.stationId || !findAnyStation(body.stationId)) {
       res.status(400).json({ error: `Unknown stationId '${body.stationId}'` });
       return;
     }
@@ -104,52 +183,12 @@ export function createServer() {
 
   app.post("/demo/telemetry/clear", (req: Request, res: Response) => {
     const body = req.body as { stationId?: string };
-    if (!body.stationId || !stationById(body.stationId)) {
+    if (!body.stationId || !findAnyStation(body.stationId)) {
       res.status(400).json({ error: `Unknown stationId '${body.stationId}'` });
       return;
     }
     clearTelemetryEvent(body.stationId);
     res.json({ status: "cleared", stationId: body.stationId });
-  });
-
-  app.get("/demo/state", (_req: Request, res: Response) => {
-    const states = Array.from(getAllStationStates().entries()).map(([stationId, state]) => ({ stationId, ...state }));
-    const evaluations = MONDEGO_STATIONS.map((s) => evaluateStationExposure(s.id)).filter((e) => e !== null);
-    res.json({ catchmentId: MONDEGO_CATCHMENT_ID, stations: states, evaluations });
-  });
-
-  app.get("/demo/forecasts", (_req: Request, res: Response) => {
-    const forecasts = getActiveForecasts().map((f) => ({
-      sourceStationId: f.sourceStationId,
-      targetStationId: f.targetStationId,
-      transport: f.transport,
-    }));
-    res.json({ catchmentId: MONDEGO_CATCHMENT_ID, forecasts });
-  });
-
-  app.get("/demo/forecast-bundle", (_req: Request, res: Response) => {
-    const now = new Date();
-    const entries = getActiveForecasts().flatMap((f) => {
-      // evaluateStationExposure(target) recomputes the same forecast this
-      // target is the object of, giving both its probability and the
-      // source station's WFD classification in one call -- skip this
-      // forecast entirely (rather than guessing) if that lookup somehow
-      // disagrees with getActiveForecasts's own result.
-      const evaluation = evaluateStationExposure(f.targetStationId);
-      if (!evaluation || evaluation.isOwnFlag || evaluation.sourceStationId !== f.sourceStationId) return [];
-
-      const resource = buildForecastRiskAssessment({
-        source: stationById(f.sourceStationId)!,
-        target: stationById(f.targetStationId)!,
-        forecast: f.transport,
-        wfd: evaluation.wfd,
-        meanVelocityMs: NETWORK_MEAN_VELOCITY_MS,
-        probability: evaluation.probability,
-        now,
-      });
-      return [{ resource }];
-    });
-    res.json({ resourceType: "Bundle", type: "collection", entry: entries });
   });
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

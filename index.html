@@ -195,6 +195,15 @@
         HL7 Europe, publishes &mdash; disclosed honestly against the real project's own published scope.
         <span class="src">cordis.europa.eu/project/id/101086521 (fetched directly); see METHODS.md &sect;6b</span>
       </li>
+      <li>
+        <b>Cross-border river management is a real, EU-recognized regulatory problem.</b> Spain and
+        Portugal jointly manage the Douro/Duero (897&nbsp;km, the largest Iberian river basin) under the
+        Albufeira Convention (1998) &mdash; a real bilateral treaty with confirmed real-time
+        hydrometeorological data-sharing between the two countries. This prototype's second network
+        demonstrates the same FHIR/CDS-Hooks pattern across that real cross-border basin, not just within
+        one country.
+        <span class="src">Albufeira Convention, independently confirmed via multiple secondary sources; see METHODS.md &sect;6b</span>
+      </li>
     </ol>
   </div>
 
@@ -215,10 +224,12 @@
     <h3>What this prototype actually implements</h3>
     <p class="lead">Standards-conformant, not a mockup &mdash; every resource shape below is real.</p>
     <div class="shared-grid">
+      <div class="shared-item"><b>Two river networks</b>Mondego (6 stations, Portugal) + Douro (4 stations, cross-border Spain&ndash;Portugal)</div>
       <div class="shared-item"><b>FHIR R4</b>Observation, RiskAssessment.prediction, Bundle</div>
       <div class="shared-item"><b>CDS Hooks</b>patient-view + order-select (v3.0 ballot)</div>
       <div class="shared-item"><b>Transport model</b>1D advection&ndash;dispersion, Taylor-dispersion closed form, numerically validated</div>
-      <div class="shared-item"><b>Early-warning detection</b>real EWMA control chart (Roberts 1959) over live noisy telemetry</div>
+      <div class="shared-item"><b>Early-warning detection</b>real EWMA control chart (Roberts 1959) over live noisy telemetry, both networks</div>
+      <div class="shared-item"><b>Incident Timeline</b>one plain-language narrative combining real events from both networks</div>
       <div class="shared-item"><b>Disclosure policy</b>every figure tagged verified or illustrative, never guessed</div>
     </div>
     <div class="run-block">npm install && npm run dev        # http://127.0.0.1:4300

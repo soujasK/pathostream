@@ -22,6 +22,12 @@ export function SimulatorControls({ stations, states, onToggleBreach, onFastForw
 
   return (
     <div className="space-y-4">
+      <p className="text-xs text-ink-muted">
+        Testing tool: reports a station's sensor as having just CONFIRMED contamination outright -- ground truth,
+        announced instantly, no detection delay. This is what drives the map, the downstream forecast, and the
+        Emergency Department's CDS Hooks alert. (Contrast with the separate "Statistical early-warning layer" below,
+        which instead demonstrates *detecting* a developing problem before it's confirmed.)
+      </p>
       <div className="divide-y divide-border">
         {stations.map((station) => {
           const state = stateByStation.get(station.id)
@@ -35,6 +41,7 @@ export function SimulatorControls({ stations, states, onToggleBreach, onFastForw
               <button
                 type="button"
                 onClick={() => onToggleBreach(station.id, !flagged)}
+                title="Testing tool: mark this station as having confirmed contamination right now"
                 className={clsx(
                   'rounded-md border px-2.5 py-1 text-xs font-medium transition-colors',
                   flagged
@@ -42,7 +49,7 @@ export function SimulatorControls({ stations, states, onToggleBreach, onFastForw
                     : 'border-border bg-surface-muted text-ink-muted hover:text-ink',
                 )}
               >
-                {flagged ? 'Simulating breach' : 'Simulate breach'}
+                {flagged ? 'Confirmed — clear it' : 'Test: report confirmed contamination'}
               </button>
             </div>
           )

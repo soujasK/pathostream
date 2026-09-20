@@ -51,13 +51,26 @@ function buildPatientViewRequest(station: NetworkStation) {
   }
 }
 
+export type Catchment = 'mondego' | 'douro'
+
+/** The Mondego network kept its original un-prefixed /demo/* paths for
+ * backward compatibility (see server.ts); Douro is served under
+ * /demo/douro/*. Every catchment-scoped call below takes the catchment
+ * explicitly rather than defaulting, so a caller can never accidentally
+ * mix the two networks' data. */
+function catchmentPrefix(catchment: Catchment): string {
+  return catchment === 'mondego' ? '/demo' : '/demo/douro'
+}
+
 export const api = {
-  stations: () => request<NetworkStation[]>('/demo/stations'),
-  state: () => request<DemoStateResponse>('/demo/state'),
-  forecasts: () => request<DemoForecastsResponse>('/demo/forecasts'),
-  simulate: (params: { stationId: string; flagged: boolean; severityIndex?: number; elapsedMinutes?: number }) =>
-    request<StationState>('/demo/simulate', { method: 'POST', body: JSON.stringify(params) }),
-  reset: () => request<{ status: string }>('/demo/reset', { method: 'POST' }),
+  stations: (catchment: Catchment) => request<NetworkStation[]>(`${catchmentPrefix(catchment)}/stations`),
+  state: (catchment: Catchment) => request<DemoStateResponse>(`${catchmentPrefix(catchment)}/state`),
+  forecasts: (catchment: Catchment) => request<DemoForecastsResponse>(`${catchmentPrefix(catchment)}/forecasts`),
+  simulate: (
+    catchment: Catchment,
+    params: { stationId: string; flagged: boolean; severityIndex?: number; elapsedMinutes?: number },
+  ) => request<StationState>(`${catchmentPrefix(catchment)}/simulate`, { method: 'POST', body: JSON.stringify(params) }),
+  reset: (catchment: Catchment) => request<{ status: string }>(`${catchmentPrefix(catchment)}/reset`, { method: 'POST' }),
   telemetry: () => request<DemoTelemetryResponse>('/demo/telemetry'),
   telemetryTick: () => request<DemoTelemetryResponse>('/demo/telemetry/tick', { method: 'POST' }),
   telemetryInject: (stationId: string) =>

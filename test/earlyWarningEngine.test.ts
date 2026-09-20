@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { DOURO_STATIONS } from "../src/data/douroNetwork.js";
 import { MONDEGO_STATIONS } from "../src/data/mondegoNetwork.js";
 import {
   advanceAllStations,
@@ -30,7 +31,7 @@ describe("earlyWarningEngine", () => {
 
   it("starts every station with no history and no injected event", () => {
     const states = getAllEarlyWarningStates();
-    expect(states).toHaveLength(MONDEGO_STATIONS.length);
+    expect(states).toHaveLength(MONDEGO_STATIONS.length + DOURO_STATIONS.length);
     for (const state of states) {
       expect(state.eventInjected).toBe(false);
       expect(state.latest).toBeNull();

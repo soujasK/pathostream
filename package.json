@@ -2,7 +2,7 @@
   "name": "oah-mondego",
   "version": "0.1.0",
   "private": true,
-  "description": "Statistical early-warning detection (EWMA control chart) plus downstream contamination-propagation forecasting for the Mondego River (Coimbra, Portugal), serialized as FHIR R4 RiskAssessment predictions and served over an Express CDS Hooks (v3.0 ballot) service, in support of the EU-funded OneAquaHealth One Health surveillance mission.",
+  "description": "Statistical early-warning detection (EWMA control chart) plus downstream contamination-propagation forecasting across two real European river networks -- the Mondego (Coimbra, Portugal) and the cross-border Douro/Duero (Spain-Portugal) -- serialized as FHIR R4 RiskAssessment predictions and served over an Express CDS Hooks (v3.0 ballot) service, in support of the EU-funded OneAquaHealth One Health surveillance mission.",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/cdsHooks/server.ts",

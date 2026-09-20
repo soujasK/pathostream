@@ -12,11 +12,19 @@
  * future work rather than done here.
  */
 
+import { DOURO_STATIONS } from "../data/douroNetwork.js";
 import { MONDEGO_STATIONS } from "../data/mondegoNetwork.js";
 import { EwmaDetector, type EwmaResult } from "./ewma.js";
 import { nextTurbidityReading, NORMAL_BASELINE, type RandomSource } from "./telemetryStream.js";
 
 const MAX_HISTORY = 60;
+
+/** Every network's stations share this one telemetry/detection registry,
+ * keyed by station id -- safe because station ids are unique across
+ * networks (Mondego is all `PT-*`; Douro mixes `ES-*`/`PT-*` with
+ * different names), and it keeps this layer genuinely network-agnostic
+ * rather than needing a second parallel copy per catchment. */
+const ALL_STATIONS = [...MONDEGO_STATIONS, ...DOURO_STATIONS];
 
 interface StationTelemetry {
   detector: EwmaDetector;
@@ -38,7 +46,7 @@ function freshStation(): StationTelemetry {
   return { detector: freshDetector(), tick: 0, eventStartTick: null, history: [] };
 }
 
-const stations = new Map<string, StationTelemetry>(MONDEGO_STATIONS.map((s) => [s.id, freshStation()]));
+const stations = new Map<string, StationTelemetry>(ALL_STATIONS.map((s) => [s.id, freshStation()]));
 
 export interface EarlyWarningState {
   stationId: string;

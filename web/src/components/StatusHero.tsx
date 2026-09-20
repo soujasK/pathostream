@@ -4,6 +4,12 @@ import type { NetworkStation, StationEvaluation } from '../api/types'
 interface StatusHeroProps {
   stations: NetworkStation[]
   worst: StationEvaluation | undefined
+  networkLabel: string
+  /** Only the Mondego network reaches a hospital (CHUC) through CDS
+   * Hooks in this demo -- the Douro network has no linked hospital, so
+   * its confirmed/predicted copy talks about the cross-border regulatory
+   * consequence instead. See README's "Two rivers, two consequences". */
+  clinicalIntegration: boolean
 }
 
 function formatMinutes(minutes: number): string {
@@ -15,7 +21,7 @@ function nameOf(stations: NetworkStation[], id: string): string {
   return stations.find((s) => s.id === id)?.name ?? id
 }
 
-export function StatusHero({ stations, worst }: StatusHeroProps) {
+export function StatusHero({ stations, worst, networkLabel, clinicalIntegration }: StatusHeroProps) {
   if (stations.length === 0) {
     return <div className="h-[220px] animate-pulse bg-surface-sunken" />
   }
@@ -56,7 +62,7 @@ export function StatusHero({ stations, worst }: StatusHeroProps) {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-critical opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-critical" />
                   </span>
-                  Mondego River network -- active exposure window
+                  {networkLabel} -- active exposure window
                 </div>
                 <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
                   Confirmed exposure at {nameOf(stations, worst!.stationId)}
@@ -65,7 +71,9 @@ export function StatusHero({ stations, worst }: StatusHeroProps) {
                   {worst!.isOwnFlag
                     ? 'This station currently shows an active biohazard signature.'
                     : `Modeled contamination front from ${nameOf(stations, worst!.sourceStationId)} is passing this station now.`}{' '}
-                  CDS Hooks is firing an active-exposure card with an antimicrobial-stewardship suggestion.
+                  {clinicalIntegration
+                    ? 'CDS Hooks is firing an active-exposure card with an antimicrobial-stewardship suggestion.'
+                    : 'Under the Albufeira Convention, this is the kind of event Spain and Portugal share real-time hydrometeorological data about.'}
                 </p>
               </div>
               <div className="flex shrink-0 items-end gap-6">
@@ -90,7 +98,7 @@ export function StatusHero({ stations, worst }: StatusHeroProps) {
               <div className="max-w-2xl">
                 <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.18em] text-warning uppercase">
                   <span className="h-2 w-2 rounded-full bg-warning" />
-                  Mondego River network -- inbound plume predicted
+                  {networkLabel} -- inbound plume predicted
                 </div>
                 <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
                   Contamination predicted to reach {nameOf(stations, worst!.stationId)}
@@ -98,8 +106,10 @@ export function StatusHero({ stations, worst }: StatusHeroProps) {
                 <p className="mt-2.5 max-w-xl text-sm leading-relaxed text-white/70">
                   A 1D advection-dispersion transport model predicts the plume from{' '}
                   {nameOf(stations, worst!.sourceStationId)} will arrive in an estimated{' '}
-                  {formatMinutes(worst!.forecast!.arrivalTimeMinutes - worst!.elapsedMinutes)}. A precautionary CDS
-                  Hooks card is already live for patients there.
+                  {formatMinutes(worst!.forecast!.arrivalTimeMinutes - worst!.elapsedMinutes)}.{' '}
+                  {clinicalIntegration
+                    ? 'A precautionary CDS Hooks card is already live for patients there.'
+                    : 'This is a real FHIR RiskAssessment.prediction resource, ready to feed a cross-border early-warning process.'}
                 </p>
               </div>
               <div className="flex shrink-0 items-end gap-6">
@@ -126,16 +136,18 @@ export function StatusHero({ stations, worst }: StatusHeroProps) {
               <div className="max-w-2xl">
                 <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.18em] text-brand-200 uppercase">
                   <span className="h-2 w-2 rounded-full bg-brand-300" />
-                  OAH-Mondego -- Coimbra, Portugal
+                  {networkLabel}
                 </div>
                 <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                  {stations.length}-station monitoring network, Mondego River
+                  {stations.length}-station monitoring network
                 </h1>
                 <p className="mt-2.5 max-w-xl text-sm leading-relaxed text-white/75">
                   {nameOf(stations, stations[0]!.id)} to {nameOf(stations, stations[stations.length - 1]!.id)} -- a 1D
                   advection-dispersion transport model watches this network for upstream biohazard events and
-                  serializes predicted downstream risk as real FHIR R4 RiskAssessment resources, reaching CHUC through
-                  CDS Hooks before a downstream sensor would ever confirm it.
+                  serializes predicted downstream risk as real FHIR R4 RiskAssessment resources
+                  {clinicalIntegration
+                    ? ', reaching CHUC through CDS Hooks before a downstream sensor would ever confirm it.'
+                    : ', ready to demonstrate a cross-border early-warning data exchange before a downstream sensor would ever confirm it.'}
                 </p>
               </div>
               <div className="flex shrink-0 items-end gap-6">

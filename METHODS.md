@@ -8,6 +8,14 @@ verified against a public source before being included (see each
 subsection); nothing here is asserted on recollection alone. For the
 plain-language "what's real vs illustrative" summary, see `README.md`.
 
+Sections 1-5 below describe the transport/forecasting model in terms of
+the original Mondego network; the same equations, code
+(`src/hydrology/*.ts`), and validation apply unchanged to the second,
+cross-border Douro/Duero network added later (`src/data/douroNetwork.ts`)
+-- see §6b for that network's own, separate provenance and §8 for the
+statistical early-warning layer that covers both networks' stations from
+one shared implementation.
+
 ## 1. Governing equation
 
 Transport of a dissolved contaminant in a river reach is modeled by the
@@ -270,9 +278,9 @@ human-set switch or a single-sample hard threshold.
   decaying memory, so it is sensitive to a *sustained* shift that stays
   within noisy single-sample bounds -- the realistic failure mode this
   layer targets, versus the instantaneous acute event
-  `advectionDispersion.ts`'s scenario and the original demo's
-  "Simulate breach" button both model. The two detection modes are
-  complementary, not competing.
+  `advectionDispersion.ts`'s scenario and the demo dashboard's "report
+  confirmed contamination" testing control both model. The two detection
+  modes are complementary, not competing.
 - **Synthetic telemetry** (`src/analytics/telemetryStream.ts`): a Gaussian
   (Box-Muller) noise process around a documented, illustrative turbidity
   baseline (15 +/- 3 NTU), with a sustained +45 NTU mean-shift standing in

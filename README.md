@@ -1,16 +1,25 @@
 # OAH-Mondego (prototype)
 
-A One Health clinical decision support prototype for the Mondego River
-through Coimbra, Portugal: a real 6-station monitoring network feeding a
+A One Health clinical decision support prototype spanning **two real
+European river networks**: the Mondego through Coimbra, Portugal (6
+stations, single-country), and the Douro/Duero (4 stations, an actual
+**cross-border** network spanning Spain and Portugal). Both feed the same
 1D advection-dispersion transport model, serialized as real FHIR R4
-`RiskAssessment.prediction` resources, and served over an Express CDS
-Hooks service that fires a precautionary card in the EHR before a
-clinician would otherwise have any reason to suspect waterborne exposure.
-A second, independent layer -- a real EWMA statistical control chart
-(Roberts 1959) over live, noisy per-station telemetry -- adds genuine
-early-warning detection on top of the transport/forecasting model, rather
-than relying on an operator-set flag alone. See "Two independent
-signals" below and `METHODS.md` §8.
+`RiskAssessment.prediction` resources, over the same Express CDS Hooks
+service. A second, independent layer -- a real EWMA statistical control
+chart (Roberts 1959) over live, noisy per-station telemetry, shared across
+both networks -- adds genuine early-warning detection on top of the
+transport/forecasting model, rather than relying on an operator-set flag
+alone. See "Two independent signals" and "Two rivers, two consequences"
+below, and `METHODS.md` §8.
+
+The dashboard is organized as three views, not one page of mixed
+debug/production controls: **Water Authority Operations** (network map,
+forecasts, demo controls, per-network), **Emergency Department**
+(Mondego-only clinical CDS Hooks alert), and **Incident Timeline** (one
+plain-language narrative combining real state changes from both networks
+and the early-warning layer -- not a separate data source, a client-side
+diff of the same polled state).
 
 **See `METHODS.md`** for the governing equations, parameter provenance,
 and independent numerical validation behind the transport model -- the
@@ -57,6 +66,15 @@ problem:
    against the real project's own published scope -- including where this
    demo's station choices diverge from OneAquaHealth's actual field sites.
    See `METHODS.md` §6b for that full disclosure.
+4. **Cross-border river management is a real, EU-recognized regulatory
+   problem, not a hypothetical one.** Spain and Portugal jointly manage
+   the Douro/Duero (897 km, the largest Iberian river basin) and four
+   other shared basins under the Albufeira Convention (1998, in force
+   since 2000) -- an independently confirmed bilateral treaty establishing
+   real-time hydrometeorological data-sharing between the two countries.
+   The Douro network in this prototype is a small, illustrative
+   demonstration of what a FHIR-based version of that real data-sharing
+   obligation could look like. See `METHODS.md` §6b/§8.
 
 The engineering problem this solves is standards-plumbing, not hydrology
 research: today, a river/catchment sensor network and a hospital EHR are
@@ -81,15 +99,43 @@ signals, because a real deployment would have to:
    station move from "in control" to "anomaly detected" a few ticks after
    injecting a synthetic contamination event, live.
 2. **Propagation** (`src/hydrology/`, described above): once a station
-   *is* contaminated (by either the detector or the manual "Simulate
-   breach" control), the transport model predicts when and with what
-   probability that signal reaches every downstream station.
+   *is* contaminated (by either the detector or the manual "report
+   confirmed contamination" testing control), the transport model predicts
+   when and with what probability that signal reaches every downstream
+   station.
 
 These are not fused in this prototype -- the detector's alarm does not
 automatically set a station's exposure-engine flag. That fusion is real,
 useful future work, named honestly as unfinished rather than either
 skipped silently or implemented hastily just to claim it exists. See
 `METHODS.md` §8 for the full statistical detail and citations.
+
+## Two rivers, two consequences
+
+The Mondego and Douro networks share every piece of underlying machinery
+(the transport model, the FHIR serialization, the EWMA layer) but
+deliberately do **not** share a consequence, because that consequence
+differs in reality:
+
+- **Mondego -> clinical.** Coimbra's real hospital, CHUC, sits on the
+  Mondego. A confirmed or predicted exposure there fires a real CDS Hooks
+  `patient-view` card -- see the "Emergency Department" tab.
+- **Douro -> cross-border regulatory/environmental.** No hospital is named
+  for the Douro network in this prototype -- inventing one would be
+  exactly the kind of fabricated connection this project's disclosure
+  policy exists to avoid. Instead, a confirmed or predicted Douro event is
+  framed against the real Albufeira Convention's data-sharing obligation
+  between Spain and Portugal (see above), and still serializes as a real
+  FHIR `RiskAssessment.prediction` -- the same standards-based building
+  block a real cross-border early-warning exchange would need, whether or
+  not a specific downstream consumer (hospital, water authority, or
+  otherwise) is modeled here.
+
+Both networks, and the statistical early-warning layer, feed the
+dashboard's **Incident Timeline** tab -- a single, plain-language,
+chronological narrative derived by diffing the same real polled state
+(nothing about the timeline is a separate or fabricated data source; see
+`web/src/hooks/useIncidentLog.ts`).
 
 ## What's verified vs illustrative
 
@@ -120,17 +166,24 @@ skipped silently or implemented hastily just to claim it exists. See
 | EWMA control chart (Roberts 1959) for statistical early-warning detection | **Real, independently confirmed** citation and formula; correctly implemented with exact (not asymptotic-only) time-varying control limits and independently tested. See `METHODS.md` §8. |
 | The early-warning layer's telemetry reflects real Mondego sensor readings | **No.** Synthetic Gaussian noise around a documented illustrative baseline (15±3 NTU) — see `METHODS.md` §8. The *algorithm* is real; the *data it's fed* is not. |
 | GDPR Article 9 / EU Health Data Space (Reg. (EU) 2025/327) compliance | **Not implemented.** Both are real, verified, currently-relevant EU instruments, named and discussed honestly as an acknowledged gap, not implemented or claimed. See `METHODS.md` §9. |
+| Douro (897 km) / Duero is the largest Iberian river basin, Spain to the Atlantic at Porto | **Verified** against the river's own Wikipedia infobox, fetched directly. |
+| All 4 Douro network station names (Zamora, Barca d'Alva, Peso da Régua, Porto) and coordinates | **Verified** — each independently fetched from that place's own Wikipedia infobox, not estimated. |
+| Douro station order (Zamora → Barca d'Alva → Peso da Régua → Porto) | **Verified** to follow the river's real west-flowing course — station longitude decreases monotonically; see `test/douroNetwork.test.ts`. |
+| Albufeira Convention (1998, Spain-Portugal shared-basin treaty covering the Douro) | **Verified** real bilateral treaty, in force since 2000, with confirmed real-time hydrometeorological data-sharing and monthly-monitoring provisions. A specific pollution-incident notification clause could **not** be independently confirmed and is not claimed. See `METHODS.md` §6b. |
+| The Douro network has a linked hospital in this demo, like CHUC on the Mondego | **No.** Intentionally not modeled — see "Two rivers, two consequences" above. |
 
 ## Architecture
 
 ```
 .
 ├── src/
-│   ├── data/mondegoNetwork.ts       6-station network + flow order (see provenance notes above)
+│   ├── data/
+│   │   ├── mondegoNetwork.ts        6-station Mondego network + flow order (see provenance notes above)
+│   │   └── douroNetwork.ts          4-station CROSS-BORDER Douro/Duero network (Spain -> Portugal)
 │   ├── analytics/
 │   │   ├── ewma.ts                  real EWMA statistical process control chart (Roberts 1959)
 │   │   ├── telemetryStream.ts       synthetic noisy per-station turbidity signal
-│   │   └── earlyWarningEngine.ts    wires the two into a per-station early-warning state
+│   │   └── earlyWarningEngine.ts    wires the two into a per-station early-warning state, both networks
 │   ├── hydrology/
 │   │   ├── advectionDispersion.ts   1D transport model (arrival/peak/clearance/probability)
 │   │   ├── channelDispersion.ts     Fischer (1979)/Liu (1977) dispersion-coefficient estimator
@@ -144,14 +197,15 @@ skipped silently or implemented hastily just to claim it exists. See
 │   │   └── exposureRules.cql        Authored computable exposure/stewardship rules
 │   └── cdsHooks/
 │       ├── types.ts                 CDS Hooks request/response shapes
-│       ├── exposureEngine.ts        Per-station state + own-flag/downstream-forecast evaluation
+│       ├── exposureEngine.ts        Exposure-engine FACTORY + the Mondego instance (own-flag/downstream-forecast evaluation)
+│       ├── douroExposureEngine.ts   The Douro network's own, independent engine instance (same factory)
 │       ├── geolocation.ts           FHIR Patient geolocation extraction (shared)
-│       ├── patientView.ts           patient-view hook handler (nearest-station resolution)
-│       ├── orderSelect.ts           order-select stewardship-trigger handler
+│       ├── patientView.ts           patient-view hook handler (Mondego-only, nearest-station resolution)
+│       ├── orderSelect.ts           order-select stewardship-trigger handler (Mondego-only)
 │       ├── discovery.ts             /cds-services manifest
-│       └── server.ts                Express app + /demo/* scaffolding
-├── test/                            86 tests: hydrology math, PDE validation, FHIR shape, CDS Hooks, exposure phases, EWMA/telemetry
-├── web/                             React + Vite + Tailwind + MapLibre dashboard (the primary demo UI)
+│       └── server.ts                Express app; registers /demo/* (Mondego) and /demo/douro/* (Douro) from one generic route function
+├── test/                            101 tests: hydrology math, PDE validation, FHIR shape, CDS Hooks, exposure phases, EWMA/telemetry, Douro network
+├── web/                             React + Vite + Tailwind + MapLibre dashboard (3 views: Operations, Emergency Department, Incident Timeline)
 ├── METHODS.md                       governing equations, parameter provenance, citations
 └── index.html                       static "about this project" landing page
 ```
@@ -161,55 +215,71 @@ skipped silently or implemented hastily just to claim it exists. See
 ```bash
 npm install
 npm run dev     # API on http://127.0.0.1:4300, auto-reload
-npm test        # 86 tests
+npm test        # 101 tests
 npm run build   # tsc -> dist/
 
 # Dashboard (separate terminal, needs the API running above)
 cd web && npm install && npm run dev   # http://localhost:5174
 ```
 
-The dashboard's "Simulator controls" panel can flag any of the 6 stations
-and has a fast-forward, `elapsedMinutes` demo-speed control
-(`POST /demo/simulate {stationId, flagged, severityIndex, elapsedMinutes}`):
-the farthest predicted arrival window is ~2.5 hours, far too long to wait
-out live, so this explicitly backdates a station's simulated flag time to
-jump straight to the predicted / confirmed / cleared phase for any
-downstream target. It sets *when* you're looking, not the underlying
-transport math -- the same model and phase boundaries apply at every jump
-point (see `src/cdsHooks/server.ts`).
+The dashboard opens on **Water Authority Operations**, with a network
+switcher (Mondego / Douro) at the top. Its "Demo & testing tools" panel
+can report any station as confirmed-contaminated and has a fast-forward,
+`elapsedMinutes` demo-speed control (`POST /demo/simulate` or
+`POST /demo/douro/simulate`, same shape): the farthest predicted arrival
+window is ~2.5 hours (Mondego) or considerably longer (Douro), far too
+long to wait out live, so this explicitly backdates a station's simulated
+flag time to jump straight to the predicted / confirmed / cleared phase
+for any downstream target. It sets *when* you're looking, not the
+underlying transport math -- the same model and phase boundaries apply at
+every jump point (see `src/cdsHooks/server.ts`).
 
 The "Statistical early-warning layer" panel below it is independent (see
-"Two independent signals" above): it ticks its own live clock client-side
-(~1.2s/sample) against `/demo/telemetry/tick`, and "Inject anomaly" starts
-a sustained synthetic contamination drift at that station's synthetic
-sensor from the *next* tick onward -- watch the badge flip from
-"In control" to "Anomaly detected" a few ticks later, in real time.
+"Two independent signals" above) and covers stations from **both**
+networks at once: it ticks its own live clock client-side (~1.2s/sample)
+against `/demo/telemetry/tick`, and "Test: simulate rising turbidity"
+starts a sustained synthetic contamination drift at that station's
+synthetic sensor from the *next* tick onward -- watch the badge flip from
+"In control" to "Anomaly detected" a few ticks later, in real time. Switch
+to the **Incident Timeline** tab to see every one of these real state
+changes, from either network, narrated in plain language as they happen.
 
 ### Try it
 
 ```bash
-# List the 6 real network stations, upstream to downstream
+# List the 6 real Mondego stations, upstream to downstream
 curl http://127.0.0.1:4300/demo/stations
+# ...or the 4 real cross-border Douro stations, Spain to the Atlantic
+curl http://127.0.0.1:4300/demo/douro/stations
 
-# Flag the most-upstream station (simulates a breach)
+# Report the most-upstream Mondego station as confirmed-contaminated
 curl -X POST http://127.0.0.1:4300/demo/simulate \
   -H "Content-Type: application/json" \
   -d '{"stationId":"PT-SANTA-CLARA","flagged":true,"severityIndex":0.9}'
 
-# Per-station state + evaluation (own-flag or downstream-forecast phase)
-curl http://127.0.0.1:4300/demo/state
+# Same, for the Spanish end of the Douro network
+curl -X POST http://127.0.0.1:4300/demo/douro/simulate \
+  -H "Content-Type: application/json" \
+  -d '{"stationId":"ES-ZAMORA","flagged":true,"severityIndex":0.9}'
 
-# Statistical early-warning layer: inject a synthetic anomaly, then advance
-# the telemetry clock a few times and watch outOfControl flip to true
+# Per-station state + evaluation (own-flag or downstream-forecast phase) -- each network has its own independent engine
+curl http://127.0.0.1:4300/demo/state
+curl http://127.0.0.1:4300/demo/douro/state
+
+# Statistical early-warning layer: inject a synthetic anomaly at a station
+# from EITHER network, then advance the shared telemetry clock a few times
+# and watch outOfControl flip to true
 curl -X POST http://127.0.0.1:4300/demo/telemetry/inject \
-  -H "Content-Type: application/json" -d '{"stationId":"PT-SANTA-CLARA"}'
+  -H "Content-Type: application/json" -d '{"stationId":"ES-ZAMORA"}'
 curl -X POST http://127.0.0.1:4300/demo/telemetry/tick
 
-# Every currently-active downstream forecast, cascaded through the flow order
+# Every currently-active downstream forecast, cascaded through each network's flow order
 curl http://127.0.0.1:4300/demo/forecasts
+curl http://127.0.0.1:4300/demo/douro/forecasts
 
 # Same forecasts as real FHIR RiskAssessment resources
 curl http://127.0.0.1:4300/demo/forecast-bundle
+curl http://127.0.0.1:4300/demo/douro/forecast-bundle
 
 # Ask patient-view for a patient at a downstream station
 curl -X POST http://127.0.0.1:4300/cds-services/patient-view \
@@ -248,6 +318,17 @@ curl -X POST http://127.0.0.1:4300/cds-services/patient-view \
   Protection Impact Assessment; no EHDS conformance (Health Data Access
   Body process, certified EHR system). See `METHODS.md` §9 for what these
   real EU instruments require and why they're out of scope here.
+- No hospital or clinical consumer is modeled for the Douro network (see
+  "Two rivers, two consequences") -- its `order-select`/`patient-view`
+  CDS Hooks are not wired to it at all; only Mondego stations resolve to
+  a patient-view card.
+- Douro's single network-wide mean velocity (0.5 m/s) is even less
+  calibrated than the Mondego's -- no public gauge reading exists for
+  either, but the Douro is a much larger river with far more geographic
+  variation the flat default doesn't capture.
+- The Incident Timeline is derived client-side from already-polled state,
+  not a persisted server-side event log -- reloading the page clears it
+  (same in-memory-only caveat as the rest of this prototype).
 
 ## Clinical & regulatory status
 

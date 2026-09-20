@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import type { EarlyWarningState, NetworkStation } from '../../api/types'
+import type { EarlyWarningState, EwmaResult, NetworkStation } from '../../api/types'
 import { EwmaSparkline } from './EwmaSparkline'
 
 interface EarlyWarningPanelProps {
@@ -9,6 +9,26 @@ interface EarlyWarningPanelProps {
   onClear: (stationId: string) => void
 }
 
+function consecutiveOutOfControl(history: EwmaResult[]): number {
+  let count = 0
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (!history[i]!.outOfControl) break
+    count += 1
+  }
+  return count
+}
+
+/** Translates the raw EWMA output into a sentence a non-statistician can
+ * act on -- the technical numbers stay visible underneath for anyone who
+ * wants them, but they are no longer the FIRST thing a reader has to
+ * parse. */
+function plainLanguageStatus(t: EarlyWarningState | undefined): string {
+  if (!t?.latest) return 'Waiting for the first sensor reading.'
+  if (!t.latest.outOfControl) return 'Turbidity is stable, within its normal statistical range.'
+  const ticks = consecutiveOutOfControl(t.history)
+  return `Turbidity has been trending above normal for ${ticks} consecutive reading${ticks === 1 ? '' : 's'} -- flagged as an early contamination signal, before any hard threshold is crossed.`
+}
+
 export function EarlyWarningPanel({ stations, telemetry, onInject, onClear }: EarlyWarningPanelProps) {
   const byStation = new Map(telemetry.map((t) => [t.stationId, t]))
 
@@ -16,9 +36,9 @@ export function EarlyWarningPanel({ stations, telemetry, onInject, onClear }: Ea
     <div className="space-y-1">
       <p className="mb-3 text-xs text-ink-muted">
         A real EWMA (exponentially weighted moving average) control chart independently monitors each station's raw,
-        noisy turbidity signal, tick by tick -- not the same as, and not fused with, the "Simulate breach" panel
-        above. This is a genuine statistical early-warning layer, sensitive to a sustained drift a single-sample
-        threshold would miss. See METHODS.md &sect;8.
+        noisy turbidity signal, tick by tick -- a genuine statistical early-warning layer, sensitive to a sustained
+        drift a single-sample threshold would miss. It runs independently of, and is not fused with, the confirmed-
+        breach reporting in "Water Authority Operations" above. See METHODS.md &sect;8.
       </p>
       <div className="divide-y divide-border">
         {stations.map((station) => {
@@ -40,8 +60,9 @@ export function EarlyWarningPanel({ stations, telemetry, onInject, onClear }: Ea
                     {outOfControl ? 'Anomaly detected' : 'In control'}
                   </span>
                 </div>
-                <div className="mt-1 text-xs text-ink-faint">
-                  {t?.latest ? `tick ${t.tick} · sample ${t.latest.sample.toFixed(1)} NTU · z=${t.latest.z.toFixed(1)}` : 'no samples yet'}
+                <p className="mt-1 text-xs text-ink-muted">{plainLanguageStatus(t)}</p>
+                <div className="mt-0.5 text-[11px] text-ink-faint">
+                  {t?.latest ? `tick ${t.tick} · sample ${t.latest.sample.toFixed(1)} NTU · z=${t.latest.z.toFixed(1)}` : ' '}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-3">
@@ -49,6 +70,11 @@ export function EarlyWarningPanel({ stations, telemetry, onInject, onClear }: Ea
                 <button
                   type="button"
                   onClick={() => (t?.eventInjected ? onClear(station.id) : onInject(station.id))}
+                  title={
+                    t?.eventInjected
+                      ? 'Stop the simulated rising-turbidity trend at this station'
+                      : 'Testing tool: start a slow, realistic rising-turbidity trend here to watch the detector notice it a few ticks later'
+                  }
                   className={clsx(
                     'shrink-0 rounded-md border px-2.5 py-1 text-xs font-medium whitespace-nowrap transition-colors',
                     t?.eventInjected
@@ -56,7 +82,7 @@ export function EarlyWarningPanel({ stations, telemetry, onInject, onClear }: Ea
                       : 'border-border bg-surface-muted text-ink-muted hover:text-ink',
                   )}
                 >
-                  {t?.eventInjected ? 'Clear event' : 'Inject anomaly'}
+                  {t?.eventInjected ? 'Stop test' : 'Test: simulate rising turbidity'}
                 </button>
               </div>
             </div>
