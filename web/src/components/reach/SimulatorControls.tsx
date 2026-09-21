@@ -25,8 +25,9 @@ export function SimulatorControls({ stations, states, onToggleBreach, onFastForw
       <p className="text-xs text-ink-muted">
         Testing tool: reports a station's sensor as having just CONFIRMED contamination outright -- ground truth,
         announced instantly, no detection delay. This is what drives the map, the downstream forecast, and the
-        Emergency Department's CDS Hooks alert. (Contrast with the separate "Statistical early-warning layer" below,
-        which instead demonstrates *detecting* a developing problem before it's confirmed.)
+        Emergency Department's CDS Hooks alert. (The "Statistical early-warning layer" below reaches this same
+        confirmed state a different way: it *detects* a developing anomaly and auto-escalates it after a sustained
+        run -- no manual report needed.)
       </p>
       <div className="divide-y divide-border">
         {stations.map((station) => {

@@ -36,6 +36,7 @@ const SHARED_ROWS: Row[] = [
   { claim: 'Closed-form model solves the governing transport PDE', status: 'verified', note: 'Checked against a direct finite-difference numerical solution, not just asserted -- see METHODS.md §4.' },
   { claim: 'EWMA control chart (Roberts 1959) for statistical early-warning detection', status: 'verified', note: 'Real citation and formula, exact time-varying control limits, independently tested; shared across both networks’ stations. See METHODS.md §8.' },
   { claim: 'Early-warning telemetry reflects real sensor readings', status: 'illustrative', note: 'No -- synthetic Gaussian noise around a documented baseline, for both networks. The algorithm is real; the data feeding it is not. See METHODS.md §8.' },
+  { claim: 'Auto-escalation rule (5 consecutive out-of-control ticks → confirmed, severity 0.7)', status: 'illustrative', note: 'A documented, tested design choice -- uncalibrated, no formal false-alarm rate. Clinician-facing cards say the flag was inferred from a turbidity trend, never a direct biohazard measurement. See METHODS.md §8.' },
   { claim: 'GDPR Article 9 / EU Health Data Space (Reg. (EU) 2025/327) compliance', status: 'illustrative', note: 'Not implemented -- named and discussed honestly as a real, current, acknowledged gap. See METHODS.md §9.' },
 ]
 

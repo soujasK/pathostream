@@ -33,6 +33,11 @@ export interface WfdClassification {
 
 export type ExposurePhase = 'predicted' | 'confirmed' | 'cleared'
 
+/** 'operator' = a human reported it via the demo's testing controls;
+ * 'statistical-detection' = the EWMA early-warning layer auto-escalated
+ * it after a sustained anomaly (src/analytics/earlyWarningEngine.ts). */
+export type ConfirmationSource = 'operator' | 'statistical-detection'
+
 export interface StationEvaluation {
   stationId: string
   phase: ExposurePhase
@@ -42,6 +47,7 @@ export interface StationEvaluation {
   elapsedMinutes: number
   probability: number
   forecast?: TransportForecast
+  confirmedVia?: ConfirmationSource
 }
 
 export interface StationState {
@@ -49,6 +55,7 @@ export interface StationState {
   flagged: boolean
   severityIndex: number
   flaggedAt: string | null
+  confirmedVia: ConfirmationSource
 }
 
 export interface DemoStateResponse {
@@ -83,6 +90,7 @@ export interface EarlyWarningState {
   eventInjected: boolean
   latest: EwmaResult | null
   history: EwmaResult[]
+  autoEscalated: boolean
 }
 
 export interface DemoTelemetryResponse {

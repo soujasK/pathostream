@@ -37,6 +37,7 @@ export function useIncidentLog({ mondego, douro, telemetry }: IncidentLogInputs)
   const [entries, setEntries] = useState<TimelineEntry[]>([])
   const previousPhaseRef = useRef<Map<string, string>>(new Map())
   const previousOutOfControlRef = useRef<Map<string, boolean>>(new Map())
+  const previousEscalatedRef = useRef<Map<string, boolean>>(new Map())
   const seededRef = useRef(false)
 
   useEffect(() => {
@@ -51,12 +52,15 @@ export function useIncidentLog({ mondego, douro, telemetry }: IncidentLogInputs)
         if (previous !== current) {
           const name = stationName(snapshot.stations, evaluation.stationId)
           if (current === 'own-confirmed') {
+            const viaStatistics = evaluation.confirmedVia === 'statistical-detection'
             additions.push({
               id: `${key}-${now}`,
               timestamp: now,
               catchmentLabel: snapshot.catchmentLabel,
               severity: 'critical',
-              message: `Confirmed contamination reported at ${name}.`,
+              message: viaStatistics
+                ? `Sustained anomaly at ${name} auto-escalated to confirmed contamination -- the statistical early-warning system caught this before any operator report.`
+                : `Confirmed contamination reported at ${name}.`,
             })
           } else if (current === 'predicted') {
             const source = stationName(snapshot.stations, evaluation.sourceStationId)
@@ -95,17 +99,27 @@ export function useIncidentLog({ mondego, douro, telemetry }: IncidentLogInputs)
       const previous = previousOutOfControlRef.current.get(t.stationId)
       if (previous !== undefined && previous !== outOfControl) {
         const name = stationName(allStations, t.stationId)
+        // Read from the PREVIOUS poll: clearing a test event resets
+        // `autoEscalated`, so by the time the flip back is observed the
+        // current value can't say whether this episode had escalated.
+        const hadEscalated = previousEscalatedRef.current.get(t.stationId) ?? false
+        // "Flagged", not "sustained": at the moment of the first
+        // out-of-control reading nothing is sustained yet -- that claim is
+        // only made by the auto-escalation entry, after the debounce run.
         additions.push({
           id: `ewma:${t.stationId}-${now}`,
           timestamp: now,
           catchmentLabel: mondego.stations.some((s) => s.id === t.stationId) ? mondego.catchmentLabel : douro.catchmentLabel,
           severity: outOfControl ? 'warning' : 'info',
           message: outOfControl
-            ? `Statistical early-warning system detected a sustained turbidity anomaly at ${name}.`
-            : `Turbidity trend at ${name} has returned to its normal statistical range.`,
+            ? `Statistical early-warning system flagged a turbidity anomaly at ${name}.`
+            : hadEscalated
+              ? `Turbidity at ${name} has returned to its normal statistical range.`
+              : `Turbidity at ${name} returned to normal before the escalation threshold -- a brief blip, correctly not escalated.`,
         })
       }
       previousOutOfControlRef.current.set(t.stationId, outOfControl)
+      previousEscalatedRef.current.set(t.stationId, t.autoEscalated)
     }
 
     // The very first poll establishes a baseline (every station's current

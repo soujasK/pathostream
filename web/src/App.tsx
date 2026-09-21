@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api, type Catchment } from './api/client'
 import type { StationEvaluation } from './api/types'
 import { useIncidentLog } from './hooks/useIncidentLog'
@@ -97,6 +97,21 @@ export default function App() {
   })
 
   const telemetry = useTelemetryTick()
+
+  // Telemetry ticks every ~1.2s but exposure state only polls every 3s, so
+  // without this a viewer could see "Escalated -> confirmed" beside a hero
+  // and map still reading "all healthy". Refresh exposure state the moment
+  // the set of auto-escalated stations changes.
+  const escalatedKey = telemetry.stations
+    .filter((s) => s.autoEscalated)
+    .map((s) => s.stationId)
+    .join(',')
+  useEffect(() => {
+    if (escalatedKey === '') return
+    void queryClient.invalidateQueries({ queryKey: ['state'] })
+    void queryClient.invalidateQueries({ queryKey: ['forecasts'] })
+  }, [escalatedKey, queryClient])
+
   const incidentEntries = useIncidentLog({
     mondego: { catchmentLabel: 'Mondego', stations: mondego.stations, evaluations: mondego.evaluations },
     douro: { catchmentLabel: 'Douro', stations: douro.stations, evaluations: douro.evaluations },

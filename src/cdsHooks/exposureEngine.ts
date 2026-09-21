@@ -27,14 +27,24 @@ import {
 } from "../hydrology/propagation.js";
 import { classifyWfdEcologicalStatus, type WfdClassification } from "../hydrology/wfdClassification.js";
 
+/** How a station came to be flagged -- 'operator' for the demo's manual
+ * "report confirmed contamination" testing control (the historical,
+ * only source before the statistical layer existed), 'statistical-
+ * detection' when the EWMA early-warning layer auto-escalated it after a
+ * sustained anomaly (see earlyWarningEngine.ts's ESCALATION_THRESHOLD_TICKS).
+ * Threaded through so the UI/incident log can tell a causal story instead
+ * of an unexplained state flip. */
+export type ConfirmationSource = "operator" | "statistical-detection";
+
 export interface StationState {
   flagged: boolean;
   /** Contamination severity at this station, 0-1. */
   severityIndex: number;
   flaggedAt: Date | null;
+  confirmedVia: ConfirmationSource;
 }
 
-const EMPTY_STATE: StationState = { flagged: false, severityIndex: 0, flaggedAt: null };
+const EMPTY_STATE: StationState = { flagged: false, severityIndex: 0, flaggedAt: null, confirmedVia: "operator" };
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
@@ -61,6 +71,8 @@ export interface StationExposureEvaluation {
   /** Present only for a downstream-forecast evaluation (not an own-flag
    * one, which has no transport distance to speak of). */
   forecast?: TransportForecast;
+  /** Present only when `isOwnFlag` -- see `ConfirmationSource`. */
+  confirmedVia?: ConfirmationSource;
 }
 
 export interface NetworkDefinition {
@@ -73,7 +85,13 @@ export interface NetworkDefinition {
 }
 
 export interface ExposureEngine {
-  setStationState(stationId: string, flagged: boolean, severityIndex?: number, flaggedAt?: Date): StationState;
+  setStationState(
+    stationId: string,
+    flagged: boolean,
+    severityIndex?: number,
+    flaggedAt?: Date,
+    confirmedVia?: ConfirmationSource,
+  ): StationState;
   getStationState(stationId: string): StationState;
   getAllStationStates(): Map<string, StationState>;
   resetAllStations(): void;
@@ -110,11 +128,13 @@ export function createExposureEngine(network: NetworkDefinition): ExposureEngine
     flagged: boolean,
     severityIndex = 0.8,
     flaggedAt: Date = new Date(),
+    confirmedVia: ConfirmationSource = "operator",
   ): StationState {
     const state: StationState = {
       flagged,
       severityIndex: flagged ? clamp01(severityIndex) : 0,
       flaggedAt: flagged ? flaggedAt : null,
+      confirmedVia,
     };
     stationStates.set(stationId, state);
     return { ...state };
@@ -157,6 +177,7 @@ export function createExposureEngine(network: NetworkDefinition): ExposureEngine
         wfd: classifyWfdEcologicalStatus(own.severityIndex),
         elapsedMinutes,
         probability: 1,
+        confirmedVia: own.confirmedVia,
       };
     }
 

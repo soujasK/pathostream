@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { douroEngine } from "../src/cdsHooks/douroExposureEngine.js";
+import { mondegoEngine } from "../src/cdsHooks/exposureEngine.js";
 import { DOURO_STATIONS } from "../src/data/douroNetwork.js";
 import { MONDEGO_STATIONS } from "../src/data/mondegoNetwork.js";
 import {
   advanceAllStations,
+  AUTO_ESCALATION_SEVERITY,
   clearTelemetryEvent,
+  ESCALATION_THRESHOLD_TICKS,
   getAllEarlyWarningStates,
   getEarlyWarningState,
   injectTelemetryEvent,
@@ -23,10 +27,13 @@ function mulberry32(seed: number): () => number {
 
 const STATION_A = MONDEGO_STATIONS[0]!.id;
 const STATION_B = MONDEGO_STATIONS[1]!.id;
+const DOURO_STATION = DOURO_STATIONS[0]!.id;
 
 describe("earlyWarningEngine", () => {
   beforeEach(() => {
     resetAllTelemetry();
+    mondegoEngine.resetAllStations();
+    douroEngine.resetAllStations();
   });
 
   it("starts every station with no history and no injected event", () => {
@@ -98,5 +105,75 @@ describe("earlyWarningEngine", () => {
       expect(state.tick).toBe(0);
       expect(state.eventInjected).toBe(false);
     }
+  });
+});
+
+describe("earlyWarningEngine auto-escalation (fused detection -> confirmation)", () => {
+  beforeEach(() => {
+    resetAllTelemetry();
+    mondegoEngine.resetAllStations();
+    douroEngine.resetAllStations();
+  });
+
+  it("does not escalate a Mondego station before ESCALATION_THRESHOLD_TICKS consecutive out-of-control ticks", () => {
+    const rng = mulberry32(20);
+    injectTelemetryEvent(STATION_A);
+    for (let i = 0; i < ESCALATION_THRESHOLD_TICKS - 1; i++) advanceAllStations(rng);
+    expect(mondegoEngine.getStationState(STATION_A).flagged).toBe(false);
+  });
+
+  it("auto-escalates a Mondego station to confirmed via its own exposure engine after sustained anomaly", () => {
+    const rng = mulberry32(21);
+    injectTelemetryEvent(STATION_A);
+    let escalatedTick = -1;
+    for (let i = 0; i < 30; i++) {
+      const results = advanceAllStations(rng);
+      const a = results.find((r) => r.stationId === STATION_A)!;
+      if (a.autoEscalated && escalatedTick === -1) escalatedTick = a.tick;
+    }
+    expect(escalatedTick).toBeGreaterThan(0);
+
+    const state = mondegoEngine.getStationState(STATION_A);
+    expect(state.flagged).toBe(true);
+    expect(state.confirmedVia).toBe("statistical-detection");
+    expect(state.severityIndex).toBe(AUTO_ESCALATION_SEVERITY);
+
+    const evaluation = mondegoEngine.evaluateStationExposure(STATION_A);
+    expect(evaluation?.isOwnFlag).toBe(true);
+    expect(evaluation?.confirmedVia).toBe("statistical-detection");
+  });
+
+  it("escalates a Douro station into the Douro engine, leaving Mondego untouched", () => {
+    const rng = mulberry32(22);
+    injectTelemetryEvent(DOURO_STATION);
+    for (let i = 0; i < 30; i++) advanceAllStations(rng);
+
+    expect(douroEngine.getStationState(DOURO_STATION).flagged).toBe(true);
+    expect(douroEngine.getStationState(DOURO_STATION).confirmedVia).toBe("statistical-detection");
+    expect(mondegoEngine.getAllStationStates().size).toBe(0);
+  });
+
+  it("does not reset flaggedAt on every subsequent out-of-control tick after escalating (elapsed time keeps advancing)", () => {
+    const rng = mulberry32(23);
+    injectTelemetryEvent(STATION_A);
+    for (let i = 0; i < 30; i++) advanceAllStations(rng);
+    const flaggedAtFirst = mondegoEngine.getStationState(STATION_A).flaggedAt;
+    expect(flaggedAtFirst).not.toBeNull();
+
+    for (let i = 0; i < 10; i++) advanceAllStations(rng);
+    const flaggedAtLater = mondegoEngine.getStationState(STATION_A).flaggedAt;
+    expect(flaggedAtLater?.getTime()).toBe(flaggedAtFirst?.getTime());
+  });
+
+  it("does not override an operator's manual report with a later auto-escalation", () => {
+    const rng = mulberry32(24);
+    const operatorTime = new Date(Date.now() - 60_000);
+    mondegoEngine.setStationState(STATION_A, true, 0.9, operatorTime, "operator");
+    injectTelemetryEvent(STATION_A);
+    for (let i = 0; i < 30; i++) advanceAllStations(rng);
+
+    const state = mondegoEngine.getStationState(STATION_A);
+    expect(state.confirmedVia).toBe("operator");
+    expect(state.flaggedAt?.getTime()).toBe(operatorTime.getTime());
   });
 });

@@ -1,9 +1,19 @@
 import { randomUUID } from "node:crypto";
 import { CHUC_ANCHOR, MONDEGO_STATIONS, stationById } from "../data/mondegoNetwork.js";
 import { haversineKm, nearestStation, type StationPosition } from "../hydrology/propagation.js";
-import { evaluateStationExposure } from "./exposureEngine.js";
+import { evaluateStationExposure, getStationState, type ConfirmationSource } from "./exposureEngine.js";
 import { extractPatientAddress } from "./geolocation.js";
 import type { Card, CdsHookResponse, PatientViewRequest } from "./types.js";
+
+/** How a flagged station's flag is described to a clinician. An operator's
+ * report is direct ground truth; a statistical auto-escalation is inferred
+ * from a turbidity trend alone -- it never observed a pathogen or a
+ * biological signature, so the card must not claim it did. */
+function describeFlag(confirmedVia: ConfirmationSource | undefined): string {
+  return confirmedVia === "statistical-detection"
+    ? "was auto-escalated from a sustained statistical turbidity anomaly (an inferred early-warning signal, not a direct pathogen or biohazard measurement)"
+    : "currently shows an active biohazard signature";
+}
 
 /** How close a patient's geocoded address must be to its nearest station
  * to be considered "in this monitored network" at all. Illustrative -- a
@@ -51,7 +61,7 @@ export function handlePatientView(request: PatientViewRequest): CdsHookResponse 
       summary: "Active waterborne biohazard exposure window for this address",
       indicator: "critical",
       detail:
-        `${station.name} ${evaluation.isOwnFlag ? "currently shows an active biohazard signature" : "is within the modeled downstream arrival window from " + stationById(evaluation.sourceStationId)!.name} ` +
+        `${station.name} ${evaluation.isOwnFlag ? describeFlag(evaluation.confirmedVia) : "is within the modeled downstream arrival window from " + stationById(evaluation.sourceStationId)!.name} ` +
         `(elapsed ~${evaluation.elapsedMinutes.toFixed(0)} min). Indicative WFD ecological status: ${evaluation.wfd.eqrClass} ` +
         `(EQR ${evaluation.wfd.indicativeEqr}). Consider empiric waterborne-exposure workup per ${CHUC_ANCHOR} ` +
         "institutional protocol; do not delay empiric therapy awaiting confirmatory testing.",
@@ -88,7 +98,7 @@ export function handlePatientView(request: PatientViewRequest): CdsHookResponse 
     summary: "Upstream waterborne contamination predicted to reach this address soon",
     indicator: "warning",
     detail:
-      `${sourceStation.name} currently shows an active biohazard signature. A 1D advection-dispersion transport ` +
+      `${sourceStation.name} ${describeFlag(getStationState(evaluation.sourceStationId).confirmedVia)}. A 1D advection-dispersion transport ` +
       `model (Taylor-dispersion approximation; ${forecast.distanceKm.toFixed(2)} km at an assumed 0.36 m/s mean ` +
       `velocity -- illustrative, not a calibrated gauge reading) predicts the contamination front will reach ` +
       `${station.name} in an estimated ${forecast.arrivalTimeMinutes.toFixed(0)}-${forecast.clearanceTimeMinutes.toFixed(0)} ` +

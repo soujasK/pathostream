@@ -69,7 +69,9 @@ export function StatusHero({ stations, worst, networkLabel, clinicalIntegration 
                 </h1>
                 <p className="mt-2.5 max-w-xl text-sm leading-relaxed text-white/70">
                   {worst!.isOwnFlag
-                    ? 'This station currently shows an active biohazard signature.'
+                    ? worst!.confirmedVia === 'statistical-detection'
+                      ? 'This station was auto-escalated from a sustained statistical turbidity anomaly -- an inferred early-warning signal, not a direct pathogen measurement.'
+                      : 'This station currently shows an active biohazard signature.'
                     : `Modeled contamination front from ${nameOf(stations, worst!.sourceStationId)} is passing this station now.`}{' '}
                   {clinicalIntegration
                     ? 'CDS Hooks is firing an active-exposure card with an antimicrobial-stewardship suggestion.'

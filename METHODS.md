@@ -239,15 +239,16 @@ disclosure in plain terms.
 Sections 1-6 above are the *transport and forecasting* model: given that a
 station IS contaminated, how far and how fast does that signal propagate.
 They say nothing about how a station's contamination is first detected --
-in this prototype, `src/cdsHooks/exposureEngine.ts`'s `flagged` state was,
-until this section's addition, set directly by an operator (a "Simulate
-breach" button), a deliberate simplification for demoing the transport
-model in isolation, but not a claim that real contamination detection is
-that simple.
+`src/cdsHooks/exposureEngine.ts`'s `flagged` state was originally set only
+directly by an operator (a manual "report confirmed contamination" testing
+control), a deliberate simplification for demoing the transport model in
+isolation, but not a claim that real contamination detection is that
+simple.
 
-`src/analytics/` adds a second, independent capability: real statistical
-process control over a continuous, noisy per-station signal, rather than a
-human-set switch or a single-sample hard threshold.
+`src/analytics/` adds real statistical process control over a continuous,
+noisy per-station signal, rather than a human-set switch or a single-sample
+hard threshold, and (see the escalation bullet below) feeds its result into
+that same `flagged` state.
 
 - **EWMA control chart** -- Roberts, S.W. (1959), "Control Chart Tests
   Based on Geometric Moving Averages", *Technometrics*, 1(3), 239-250.
@@ -295,16 +296,44 @@ human-set switch or a single-sample hard threshold.
   `test/earlyWarningEngine.test.ts` check the noise generator's statistics
   and the full per-station wiring, including that an unflagged station
   stays in control while an injected one is correctly detected.
-- **Deliberately NOT fused with `exposureEngine.ts`**: this layer's
-  out-of-control signal does not automatically set a station's `flagged`
-  state or drive the CDS Hooks cards -- the two are shown as separate,
-  independently meaningful signals (`/demo/state` vs `/demo/telemetry`).
-  Fusing them (e.g., "N consecutive out-of-control ticks promotes a
-  station to flagged") is a natural next step, left undone and disclosed
-  as such rather than implemented hastily -- this prototype's exposure
-  evaluations and every test covering `exposureEngine.ts`'s
-  predicted/confirmed/cleared phases and the CDS Hooks cards they drive
-  are unaffected by whether this layer's alarm is on or off.
+- **Escalation: detection is fused into the exposure engine, with a
+  debounce.** A station that stays out of control for
+  `ESCALATION_THRESHOLD_TICKS = 5` *consecutive* ticks is auto-escalated
+  (`src/analytics/earlyWarningEngine.ts`) by calling its own network's
+  `setStationState(..., 'statistical-detection')`, after which the normal
+  chain runs unchanged: downstream forecast -> FHIR `RiskAssessment` ->
+  (Mondego only) CDS Hooks card. Design decisions worth stating plainly:
+  - *Debounce, not a hair trigger.* One out-of-control tick never
+    escalates; the EWMA's 3-sigma limits rarely but not never false-alarm
+    (`test/ewma.test.ts` asserts fewer than 5 over 300 in-control ticks --
+    a loose bound, not a measured rate), and across 10 stations on a ~1.2s
+    clock a lone blip will occasionally occur. The Incident Timeline
+    narrates those as "returned to normal before the escalation threshold
+    -- correctly not escalated."
+  - *Idempotent and non-clobbering.* Escalation happens once per event and
+    only if the station isn't already flagged, so it never resets an
+    existing `flaggedAt` (which would freeze the downstream plume in its
+    "predicted" phase forever) and never overwrites an operator's report
+    (both covered in `test/earlyWarningEngine.test.ts`). The `autoEscalated`
+    latch resets only when the test event is stopped/cleared.
+  - *Provenance is preserved end to end.* Each flag carries `confirmedVia`
+    (`'operator'` | `'statistical-detection'`). The turbidity signal never
+    observes a pathogen, so a CDS card for an auto-escalated station says
+    it was "auto-escalated from a sustained statistical turbidity anomaly
+    (an inferred early-warning signal, not a direct pathogen or biohazard
+    measurement)" and never claims a direct biohazard signature
+    (`test/cdsHooks.test.ts`, "card provenance wording").
+  - *Not calibrated.* The 5-tick run length and the fixed 0.7 severity
+    given to an auto-escalation (vs. 0.9 for an operator report) are
+    illustrative, documented choices. The scheme's false-alarm and
+    detection-delay behaviour is not characterized as a formal average run
+    length (ARL), which a real deployment would need to set the run length
+    against an acceptable false-alert rate.
+  - *A policy decision, not just a code rule.* Letting a purely
+    statistical signal reach a clinician with no human confirmation raises
+    alert-fatigue and regulatory-classification questions (§9) that this
+    prototype does not resolve; it exists to demonstrate the end-to-end
+    interoperability chain.
 - **A standard this is NOT claiming conformance to**: ISO/IEEE 11073
   Personal Health Data Standards is a real, independently confirmed IEEE
   standards family (11073.org; IEEE Standards Association) -- but it

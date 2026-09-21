@@ -24,6 +24,9 @@ function consecutiveOutOfControl(history: EwmaResult[]): number {
  * parse. */
 function plainLanguageStatus(t: EarlyWarningState | undefined): string {
   if (!t?.latest) return 'Waiting for the first sensor reading.'
+  if (t.autoEscalated) {
+    return 'This sustained anomaly was auto-escalated to a confirmed contamination report -- see Water Authority Operations and the Incident Timeline.'
+  }
   if (!t.latest.outOfControl) return 'Turbidity is stable, within its normal statistical range.'
   const ticks = consecutiveOutOfControl(t.history)
   return `Turbidity has been trending above normal for ${ticks} consecutive reading${ticks === 1 ? '' : 's'} -- flagged as an early contamination signal, before any hard threshold is crossed.`
@@ -36,9 +39,10 @@ export function EarlyWarningPanel({ stations, telemetry, onInject, onClear }: Ea
     <div className="space-y-1">
       <p className="mb-3 text-xs text-ink-muted">
         A real EWMA (exponentially weighted moving average) control chart independently monitors each station's raw,
-        noisy turbidity signal, tick by tick -- a genuine statistical early-warning layer, sensitive to a sustained
-        drift a single-sample threshold would miss. It runs independently of, and is not fused with, the confirmed-
-        breach reporting in "Water Authority Operations" above. See METHODS.md &sect;8.
+        noisy turbidity signal, tick by tick -- sensitive to a sustained drift a single-sample threshold would miss.
+        A station that stays out of control for 5 consecutive ticks is auto-escalated to a confirmed report in
+        "Water Authority Operations" above, feeding the same downstream forecast and CDS Hooks alert a manual report
+        would. See METHODS.md &sect;8.
       </p>
       <div className="divide-y divide-border">
         {stations.map((station) => {
@@ -52,12 +56,14 @@ export function EarlyWarningPanel({ stations, telemetry, onInject, onClear }: Ea
                   <span
                     className={clsx(
                       'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase',
-                      outOfControl
+                      t?.autoEscalated
                         ? 'border-critical-border bg-critical-bg text-critical'
-                        : 'border-healthy-border bg-healthy-bg text-healthy',
+                        : outOfControl
+                          ? 'border-warning-border bg-warning-bg text-warning'
+                          : 'border-healthy-border bg-healthy-bg text-healthy',
                     )}
                   >
-                    {outOfControl ? 'Anomaly detected' : 'In control'}
+                    {t?.autoEscalated ? 'Escalated → confirmed' : outOfControl ? 'Anomaly detected' : 'In control'}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-ink-muted">{plainLanguageStatus(t)}</p>

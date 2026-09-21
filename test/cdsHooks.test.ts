@@ -142,6 +142,33 @@ describe("POST /cds-services/patient-view", () => {
     const res = await request(app).post("/cds-services/patient-view").send(patientViewRequest(SOURCE.latitude, SOURCE.longitude));
     expect(res.body.cards).toEqual([]);
   });
+
+  describe("card provenance wording (operator report vs statistical auto-escalation)", () => {
+    it("describes an operator-reported flag as an active biohazard signature", async () => {
+      await request(app).post("/demo/simulate").send({ stationId: TARGET.id, flagged: true, severityIndex: 0.9 });
+      const res = await request(app).post("/cds-services/patient-view").send(patientViewRequest(TARGET.latitude, TARGET.longitude));
+      expect(res.body.cards[0].detail).toContain("currently shows an active biohazard signature");
+      expect(res.body.cards[0].detail).not.toContain("auto-escalated");
+    });
+
+    it("does NOT claim a direct biohazard signature for a statistically auto-escalated flag", async () => {
+      setStationState(TARGET.id, true, 0.7, new Date(), "statistical-detection");
+      const res = await request(app).post("/cds-services/patient-view").send(patientViewRequest(TARGET.latitude, TARGET.longitude));
+      const detail: string = res.body.cards[0].detail;
+      expect(detail).toContain("auto-escalated from a sustained statistical turbidity anomaly");
+      expect(detail).toContain("not a direct pathogen or biohazard measurement");
+      expect(detail).not.toContain("currently shows an active biohazard signature");
+    });
+
+    it("carries the same honesty into the downstream (predicted) card for an auto-escalated source", async () => {
+      setStationState(SOURCE.id, true, 0.7, new Date(), "statistical-detection");
+      const res = await request(app).post("/cds-services/patient-view").send(patientViewRequest(TARGET.latitude, TARGET.longitude));
+      const detail: string = res.body.cards[0].detail;
+      expect(res.body.cards[0].indicator).toBe("warning");
+      expect(detail).toContain(`${SOURCE.name} was auto-escalated`);
+      expect(detail).not.toContain("currently shows an active biohazard signature");
+    });
+  });
 });
 
 describe("GET /demo/forecasts and /demo/forecast-bundle", () => {
