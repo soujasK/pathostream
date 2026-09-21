@@ -9,11 +9,17 @@ interface SimulatorControlsProps {
   onReset: () => void
 }
 
+// Plume travel time spans minutes (a city reach) to weeks (the Danube), so
+// the steps do too.
 const FAST_FORWARD_STEPS = [
   { label: '+5 min', minutes: 5 },
   { label: '+20 min', minutes: 20 },
-  { label: '+60 min', minutes: 60 },
-  { label: '+150 min', minutes: 150 },
+  { label: '+1 hr', minutes: 60 },
+  { label: '+2.5 hr', minutes: 150 },
+  { label: '+12 hr', minutes: 720 },
+  { label: '+1 day', minutes: 1440 },
+  { label: '+3 days', minutes: 4320 },
+  { label: '+7 days', minutes: 10080 },
 ]
 
 export function SimulatorControls({ stations, states, onToggleBreach, onFastForward, onReset }: SimulatorControlsProps) {
@@ -62,8 +68,8 @@ export function SimulatorControls({ stations, states, onToggleBreach, onFastForw
           Fast-forward the simulated clock
         </div>
         <p className="mb-2 text-xs text-ink-muted">
-          Sets WHEN we're looking, not the physics -- lets the farthest station's ~2.5hr predicted window be seen
-          without waiting it out live.
+          Sets WHEN we're looking, not the physics -- lets a far-downstream station's predicted window (minutes on a
+          city reach, days on the Danube) be seen without waiting it out live.
         </p>
         <div className="grid grid-cols-4 gap-2">
           {FAST_FORWARD_STEPS.map((step) => (

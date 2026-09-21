@@ -10,8 +10,34 @@ export interface NetworkStation {
   verified: boolean
   coordinatesEstimated?: boolean
   verificationNote: string
-  /** Present only on the cross-border Douro network's stations. */
-  country?: 'ES' | 'PT'
+  /** ISO 3166-1 alpha-2 code of the EU member state the station is in. */
+  country?: string
+}
+
+export interface ProvenanceRow {
+  claim: string
+  status: 'verified' | 'illustrative'
+  note: string
+}
+
+/** One river network, as described by GET /demo/catchments. */
+export interface CatchmentInfo {
+  id: string
+  label: string
+  region: string
+  stationCount: number
+  countries: string[]
+  riverLengthKm: number | null
+  basinAreaKm2: number | null
+  meanVelocityMs: number
+  governance: { name: string; note: string } | null
+  hospitalAnchor: string | null
+  provenance: ProvenanceRow[]
+}
+
+export interface CatchmentsResponse {
+  countriesCovered: string[]
+  catchments: CatchmentInfo[]
 }
 
 export interface TransportForecast {

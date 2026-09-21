@@ -13,15 +13,12 @@
  * out-of-control readings, not a single noisy sample, before escalating.
  * This turns "anomaly detected" and "confirmed contamination" into one
  * causal chain (detection -> escalation -> downstream forecast -> CDS
- * Hooks alert) instead of two disconnected signals -- see README's "Two
- * independent signals" note, now updated to describe this fusion.
+ * Hooks alert) instead of two disconnected signals -- see README's "One
+ * causal chain" section.
  */
 
-import { DOURO_STATIONS } from "../data/douroNetwork.js";
-import { douroEngine } from "../cdsHooks/douroExposureEngine.js";
-import { mondegoEngine } from "../cdsHooks/exposureEngine.js";
-import type { ExposureEngine } from "../cdsHooks/exposureEngine.js";
-import { MONDEGO_STATIONS } from "../data/mondegoNetwork.js";
+import { engineForStation } from "../cdsHooks/catchmentEngines.js";
+import { ALL_STATIONS } from "../data/catchments.js";
 import { EwmaDetector, type EwmaResult } from "./ewma.js";
 import { nextTurbidityReading, NORMAL_BASELINE, type RandomSource } from "./telemetryStream.js";
 
@@ -40,19 +37,12 @@ export const ESCALATION_THRESHOLD_TICKS = 5;
  * statistical signal rather than observed directly. */
 export const AUTO_ESCALATION_SEVERITY = 0.7;
 
-/** Every network's stations share this one telemetry/detection registry,
- * keyed by station id -- safe because station ids are unique across
- * networks (Mondego is all `PT-*`; Douro mixes `ES-*`/`PT-*` with
- * different names), and it keeps this layer genuinely network-agnostic
- * rather than needing a second parallel copy per catchment. Each station
- * id also maps to whichever network's exposure engine owns it, so
- * escalation lands in the right place. */
-const ALL_STATIONS = [...MONDEGO_STATIONS, ...DOURO_STATIONS];
-const ENGINE_BY_STATION = new Map<string, ExposureEngine>([
-  ...MONDEGO_STATIONS.map((s): [string, ExposureEngine] => [s.id, mondegoEngine]),
-  ...DOURO_STATIONS.map((s): [string, ExposureEngine] => [s.id, douroEngine]),
-]);
-
+/** Every river's stations share this one telemetry/detection registry,
+ * keyed by station id -- safe because the catchment registry
+ * (`data/catchments.ts`) refuses to load if two rivers share an id, and it
+ * keeps this layer genuinely network-agnostic. Escalation is routed to
+ * whichever river's exposure engine owns the station
+ * (`engineForStation`). */
 interface StationTelemetry {
   detector: EwmaDetector;
   tick: number;
@@ -121,19 +111,15 @@ export function advanceAllStations(rng: RandomSource = Math.random): EarlyWarnin
 
     station.consecutiveOutOfControl = result.outOfControl ? station.consecutiveOutOfControl + 1 : 0;
 
+    const engine = engineForStation(stationId);
     if (
       station.consecutiveOutOfControl >= ESCALATION_THRESHOLD_TICKS &&
       !station.autoEscalated &&
-      !ENGINE_BY_STATION.get(stationId)?.getStationState(stationId).flagged
+      engine &&
+      !engine.getStationState(stationId).flagged
     ) {
       station.autoEscalated = true;
-      ENGINE_BY_STATION.get(stationId)?.setStationState(
-        stationId,
-        true,
-        AUTO_ESCALATION_SEVERITY,
-        new Date(),
-        "statistical-detection",
-      );
+      engine.setStationState(stationId, true, AUTO_ESCALATION_SEVERITY, new Date(), "statistical-detection");
     }
 
     results.push(toState(stationId, station));
@@ -174,5 +160,15 @@ export function getAllEarlyWarningStates(): EarlyWarningState[] {
 export function resetAllTelemetry(): void {
   for (const stationId of stations.keys()) {
     stations.set(stationId, freshStation());
+  }
+}
+
+/** Resets telemetry for just one river's stations -- what a river's own
+ * "Reset" must do, so an auto-escalation latch never outlives the flag it
+ * created (otherwise the panel would keep saying "Escalated -> confirmed"
+ * for a station the exposure engine has since cleared). */
+export function resetTelemetryFor(stationIds: string[]): void {
+  for (const stationId of stationIds) {
+    if (stations.has(stationId)) stations.set(stationId, freshStation());
   }
 }

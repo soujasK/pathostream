@@ -33,15 +33,12 @@
  *    illustrative, documented defaults -- see advectionDispersion.ts.
  */
 
-export interface NetworkStation {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  verified: boolean;
-  coordinatesEstimated?: boolean;
-  verificationNote: string;
-}
+import type { NetworkStation } from "./networkTypes.js";
+
+// Re-exported so the many existing `import { NetworkStation } from
+// ".../mondegoNetwork.js"` call sites keep working; the type itself now
+// lives in networkTypes.ts, shared by every river.
+export type { NetworkStation } from "./networkTypes.js";
 
 export const MONDEGO_CATCHMENT_ID = "mondego-coimbra";
 
@@ -53,6 +50,7 @@ export const CHUC_ANCHOR = "Centro Hospitalar e Universitário de Coimbra (CHUC)
 export const MONDEGO_STATIONS: NetworkStation[] = [
   {
     id: "PT-SANTA-CLARA",
+    country: "PT",
     name: "Ponte de Santa Clara",
     latitude: 40.20611,
     longitude: -8.43056,
@@ -62,6 +60,7 @@ export const MONDEGO_STATIONS: NetworkStation[] = [
   },
   {
     id: "PT-MANUEL-BRAGA",
+    country: "PT",
     name: "Parque Dr. Manuel Braga",
     latitude: 40.2043,
     longitude: -8.429,
@@ -72,6 +71,7 @@ export const MONDEGO_STATIONS: NetworkStation[] = [
   },
   {
     id: "PT-PARQUE-VERDE",
+    country: "PT",
     name: "Parque Verde do Mondego",
     latitude: 40.2038,
     longitude: -8.4285,
@@ -80,6 +80,7 @@ export const MONDEGO_STATIONS: NetworkStation[] = [
   },
   {
     id: "PT-CHOUPALINHO",
+    country: "PT",
     name: "Parque Choupalinho",
     latitude: 40.204,
     longitude: -8.431,
@@ -90,6 +91,7 @@ export const MONDEGO_STATIONS: NetworkStation[] = [
   },
   {
     id: "PT-ACUDE-PONTE",
+    country: "PT",
     name: "Açude-Ponte",
     latitude: 40.2154,
     longitude: -8.4401,
@@ -98,6 +100,7 @@ export const MONDEGO_STATIONS: NetworkStation[] = [
   },
   {
     id: "PT-CHOUPAL",
+    country: "PT",
     name: "Mata Nacional do Choupal",
     latitude: 40.22194,
     longitude: -8.44611,

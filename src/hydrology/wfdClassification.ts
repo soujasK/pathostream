@@ -8,12 +8,13 @@
  * correctly represented below. What is NOT real: the specific numeric
  * boundaries. Official WFD boundary-setting is type-specific per
  * water-body category and requires a formal intercalibration exercise
- * against national reference conditions (in Portugal, run by APA --
- * Agencia Portuguesa do Ambiente) using real biological quality elements
- * (macroinvertebrates, diatoms, fish fauna), not a single contamination
- * index. This module maps an illustrative severity index onto the 5 class
- * names with linear, documented, tunable boundaries: a demonstration of
- * the FRAMEWORK's shape, not a conformant Portuguese WFD assessment.
+ * against national reference conditions (each member state runs its own
+ * -- e.g. APA, the Agencia Portuguesa do Ambiente, in Portugal) using real
+ * biological quality elements (macroinvertebrates, diatoms, fish fauna),
+ * not a single contamination index. This module maps an illustrative
+ * severity index onto the 5 class names with linear, documented, tunable
+ * boundaries: a demonstration of the FRAMEWORK's shape, not a conformant
+ * WFD assessment for any member state.
  */
 
 export type WfdEcologicalStatusClass = "High" | "Good" | "Moderate" | "Poor" | "Bad";
@@ -28,11 +29,11 @@ export interface WfdClassification {
 
 const ILLUSTRATIVE_NOTE =
   "Illustrative proxy mapping onto the real WFD 5-class EQR system -- NOT an official, " +
-  "type-specific, intercalibrated Portuguese APA assessment.";
+  "type-specific, intercalibrated national assessment.";
 
 /** Boundaries between classes, in descending indicativeEqr order.
- * Documented, tunable illustrative defaults (not sourced from an official
- * Portuguese type-specific intercalibration). */
+ * Documented, tunable illustrative defaults (not sourced from any member
+ * state's official type-specific intercalibration). */
 const CLASS_BOUNDARIES: Array<{ minEqr: number; eqrClass: WfdEcologicalStatusClass }> = [
   { minEqr: 0.8, eqrClass: "High" },
   { minEqr: 0.6, eqrClass: "Good" },

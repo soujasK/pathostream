@@ -6,19 +6,35 @@ import {
   clearTelemetryEvent,
   getAllEarlyWarningStates,
   injectTelemetryEvent,
-  resetAllTelemetry,
+  resetTelemetryFor,
 } from "../analytics/earlyWarningEngine.js";
-import { DOURO_CATCHMENT_ID, DOURO_MEAN_VELOCITY_MS, DOURO_STATIONS, douroStationById } from "../data/douroNetwork.js";
-import { MONDEGO_CATCHMENT_ID, MONDEGO_STATIONS, type NetworkStation, stationById } from "../data/mondegoNetwork.js";
+import { CATCHMENTS, COUNTRIES_COVERED, routePrefix, stationAnywhere } from "../data/catchments.js";
+import type { CatchmentDefinition, NetworkStation } from "../data/networkTypes.js";
 import { buildForecastRiskAssessment } from "../fhir/riskAssessment.js";
+import { engineFor } from "./catchmentEngines.js";
 import { discoveryManifest } from "./discovery.js";
-import { douroEngine } from "./douroExposureEngine.js";
-import { mondegoEngine, type ExposureEngine } from "./exposureEngine.js";
+import type { ExposureEngine } from "./exposureEngine.js";
 import { handleOrderSelect } from "./orderSelect.js";
 import { handlePatientView } from "./patientView.js";
 import type { OrderSelectRequest, PatientViewRequest } from "./types.js";
 
-const NETWORK_MEAN_VELOCITY_MS = 0.36;
+/** What the dashboard needs to know about a river without fetching its
+ * stations -- everything here is straight from the registry. */
+function catchmentSummary(c: CatchmentDefinition) {
+  return {
+    id: c.id,
+    label: c.label,
+    region: c.region,
+    stationCount: c.stations.length,
+    countries: [...new Set(c.stations.map((s) => s.country).filter((x) => x !== undefined))],
+    riverLengthKm: c.riverLengthKm ?? null,
+    basinAreaKm2: c.basinAreaKm2 ?? null,
+    meanVelocityMs: c.meanVelocityMs,
+    governance: c.governance ?? null,
+    hospitalAnchor: c.hospitalAnchor ?? null,
+    provenance: c.provenance,
+  };
+}
 
 interface CatchmentRouteOptions {
   prefix: string;
@@ -27,18 +43,16 @@ interface CatchmentRouteOptions {
   findStation: (id: string) => NetworkStation | undefined;
   engine: ExposureEngine;
   meanVelocityMs: number;
-  /** Extra side effect to run when this catchment's /reset is called --
-   * used only for Mondego's un-prefixed /demo/reset, which has always
-   * also cleared the (network-agnostic) telemetry layer; see that call
-   * site for why Douro's own /demo/douro/reset does not do the same. */
+  /** Extra side effect to run when this river's /reset is called -- the
+   * caller uses it to clear that river's stations' telemetry too. */
   onReset?: () => void;
 }
 
-/** Registers the same generic /demo/:catchment/* route family for any
- * network + its exposure engine -- used once for Mondego (kept at the
- * original un-prefixed /demo/* paths for backward compatibility with
- * every existing test/caller) and once for Douro (under /demo/douro/*),
- * rather than hand-duplicating five routes per network. */
+/** Registers the same generic route family for any river + its exposure
+ * engine -- called once per entry in the catchment registry (Mondego at
+ * the original un-prefixed /demo/* paths, kept for backward compatibility
+ * with every existing caller; every other river under /demo/<id>/*),
+ * rather than hand-duplicating routes per river. */
 function registerCatchmentRoutes(app: ReturnType<typeof express>, options: CatchmentRouteOptions) {
   const { prefix, catchmentId, stations, findStation, engine, meanVelocityMs, onReset } = options;
 
@@ -134,41 +148,42 @@ export function createServer() {
   });
 
   // --- Demo-only scaffolding: real backend state a demo frontend can
-  // drive, nothing fabricated in a browser. Registered once for Mondego
-  // (kept at the original un-prefixed /demo/* paths for backward
-  // compatibility with every existing test/caller) and once for the
-  // cross-border Douro network, from the exact same generic route
-  // registrar and exposure-engine factory -- see registerCatchmentRoutes
-  // above and exposureEngine.ts's docstring. ---
+  // drive, nothing fabricated in a browser. One route family per river in
+  // the registry (data/catchments.ts): Mondego keeps the original
+  // un-prefixed /demo/* paths for backward compatibility, every other
+  // river is under /demo/<id>/*. The dashboard builds its river switcher,
+  // Europe map and disclosure panel from /demo/catchments. ---
 
-  registerCatchmentRoutes(app, {
-    prefix: "/demo",
-    catchmentId: MONDEGO_CATCHMENT_ID,
-    stations: MONDEGO_STATIONS,
-    findStation: stationById,
-    engine: mondegoEngine,
-    meanVelocityMs: NETWORK_MEAN_VELOCITY_MS,
-    onReset: resetAllTelemetry,
+  app.get("/demo/catchments", (_req: Request, res: Response) => {
+    res.json({
+      countriesCovered: COUNTRIES_COVERED,
+      catchments: CATCHMENTS.map((c) => catchmentSummary(c)),
+    });
   });
 
-  registerCatchmentRoutes(app, {
-    prefix: "/demo/douro",
-    catchmentId: DOURO_CATCHMENT_ID,
-    stations: DOURO_STATIONS,
-    findStation: douroStationById,
-    engine: douroEngine,
-    meanVelocityMs: DOURO_MEAN_VELOCITY_MS,
-  });
+  for (const catchment of CATCHMENTS) {
+    registerCatchmentRoutes(app, {
+      prefix: routePrefix(catchment),
+      catchmentId: catchment.catchmentId,
+      stations: catchment.stations,
+      findStation: (id) => catchment.stations.find((s) => s.id === id),
+      engine: engineFor(catchment.id),
+      meanVelocityMs: catchment.meanVelocityMs,
+      // A river's Reset also clears ITS stations' telemetry, so an
+      // auto-escalation latch can't outlive the flag it created.
+      onReset: () => resetTelemetryFor(catchment.stations.map((s) => s.id)),
+    });
+  }
 
   // --- Statistical early-warning layer: a real EWMA control chart
   // (src/analytics/ewma.ts) monitoring a synthetic noisy per-station
-  // telemetry signal (src/analytics/telemetryStream.ts). Deliberately
-  // independent of the exposure engine(s) above, and network-agnostic --
-  // one shared registry covers every station across both catchments (see
-  // earlyWarningEngine.ts's docstring and README's "Two independent
-  // signals" note). ---
+  // telemetry signal (src/analytics/telemetryStream.ts), one shared
+  // registry covering every station of every river. A station that stays
+  // out of control long enough is auto-escalated into its own river's
+  // exposure engine (see earlyWarningEngine.ts and README's "One causal
+  // chain"). ---
 
-  const findAnyStation = (id: string): NetworkStation | undefined => stationById(id) ?? douroStationById(id);
+  const findAnyStation = (id: string): NetworkStation | undefined => stationAnywhere(id);
 
   app.get("/demo/telemetry", (_req: Request, res: Response) => {
     res.json({ stations: getAllEarlyWarningStates() });

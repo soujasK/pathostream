@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>OAH-Mondego &mdash; One Health CDS prototype</title>
+<title>OAH River Watch &mdash; river contamination to clinical alerts</title>
 <style>
   :root {
     --color-brand-50: #eff6ff; --color-brand-100: #dbeafe; --color-brand-300: #93c5fd;
@@ -133,8 +133,8 @@
     <div class="brand">
       <div class="logo">OAH</div>
       <div>
-        <h1>OAH-Mondego</h1>
-        <p>Coimbra, Portugal &mdash; One Health clinical decision support prototype</p>
+        <h1>OAH River Watch</h1>
+        <p>Seven real European rivers &mdash; contamination warnings for clinicians (prototype)</p>
       </div>
     </div>
     <div class="header-tags">
@@ -148,13 +148,13 @@
 <main>
   <div class="hero">
     <div class="eyebrow">Prototype &middot; not a certified medical device</div>
-    <h2>Waterborne biohazard signal &rarr; CDS Hooks card, in real time</h2>
+    <h2>Warn the doctor before the patients arrive</h2>
     <p>
-      A real-time river/catchment contamination signal drives a FHIR R4 <code>RiskAssessment</code>,
-      downstream propagation forecasting via a 1D advection&ndash;dispersion transport model
-      (independently validated against a direct numerical PDE solution), and a live CDS Hooks
-      <code>patient-view</code> card in the EHR &mdash; before a clinician would otherwise have any
-      reason to suspect waterborne exposure at a patient's home address.
+      When heavy rain pushes sewage into a river, people downstream get sick &mdash; and doctors usually
+      find out only after the patients arrive. This prototype connects river monitoring to the hospital
+      chart: a contamination signal is tracked downstream by a flow model, packaged in a standard
+      health-data format (FHIR), and shown as a warning card when a doctor opens the record of someone
+      living near an affected station. Seven real rivers, 33 stations, 13 EU member states.
     </p>
     <div class="status-row">
       <span class="status-pill" id="status-api" data-check="http://127.0.0.1:4300/demo/stations">
@@ -196,13 +196,13 @@
         <span class="src">cordis.europa.eu/project/id/101086521 (fetched directly); see METHODS.md &sect;6b</span>
       </li>
       <li>
-        <b>Cross-border river management is a real, EU-recognized regulatory problem.</b> Spain and
-        Portugal jointly manage the Douro/Duero (897&nbsp;km, the largest Iberian river basin) under the
-        Albufeira Convention (1998) &mdash; a real bilateral treaty with confirmed real-time
-        hydrometeorological data-sharing between the two countries. This prototype's second network
-        demonstrates the same FHIR/CDS-Hooks pattern across that real cross-border basin, not just within
-        one country.
-        <span class="src">Albufeira Convention, independently confirmed via multiple secondary sources; see METHODS.md &sect;6b</span>
+        <b>Big European rivers already have cross-border warning arrangements on the water side &mdash; and
+        real failures when communication breaks down.</b> The Rhine has an International Warning and Alarm
+        Plan, the Danube an Accident Emergency Warning System, Spain and Portugal share the Douro and Tagus
+        under the Albufeira Convention, and the 2022 Oder fish die-off (well over 100 tonnes of fish) exposed
+        slow communication between Poland and Germany. This prototype explores the clinical hand-off; it does
+        not replace those systems.
+        <span class="src">Rhine plan: iksr.org (fetched directly). Danube/Albufeira: secondary sources. Oder: Wikipedia, citing a 2023 European Commission report. See METHODS.md &sect;6c</span>
       </li>
     </ol>
   </div>
@@ -224,12 +224,12 @@
     <h3>What this prototype actually implements</h3>
     <p class="lead">Standards-conformant, not a mockup &mdash; every resource shape below is real.</p>
     <div class="shared-grid">
-      <div class="shared-item"><b>Two river networks</b>Mondego (6 stations, Portugal) + Douro (4 stations, cross-border Spain&ndash;Portugal)</div>
+      <div class="shared-item"><b>Seven river networks</b>Mondego, Douro, Tagus, Danube, Rhine, Elbe, Oder &mdash; 33 stations, 13 EU member states</div>
       <div class="shared-item"><b>FHIR R4</b>Observation, RiskAssessment.prediction, Bundle</div>
       <div class="shared-item"><b>CDS Hooks</b>patient-view + order-select (v3.0 ballot)</div>
       <div class="shared-item"><b>Transport model</b>1D advection&ndash;dispersion, Taylor-dispersion closed form, numerically validated</div>
-      <div class="shared-item"><b>Early-warning detection</b>real EWMA control chart (Roberts 1959) over live noisy telemetry, both networks</div>
-      <div class="shared-item"><b>Incident Timeline</b>one plain-language narrative combining real events from both networks</div>
+      <div class="shared-item"><b>Early-warning detection</b>real EWMA control chart (Roberts 1959) over live noisy telemetry, every river</div>
+      <div class="shared-item"><b>Incident Timeline</b>one plain-language narrative combining real events from every river</div>
       <div class="shared-item"><b>Disclosure policy</b>every figure tagged verified or illustrative, never guessed</div>
     </div>
     <div class="run-block">npm install && npm run dev        # http://127.0.0.1:4300

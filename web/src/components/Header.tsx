@@ -7,8 +7,8 @@ export function Header() {
             OAH
           </div>
           <div>
-            <h1 className="text-lg font-semibold tracking-tight text-ink">OAH-Mondego</h1>
-            <p className="text-xs text-ink-muted">Coimbra, Portugal -- One Health resilience &amp; digital health standards</p>
+            <h1 className="text-lg font-semibold tracking-tight text-ink">OAH River Watch</h1>
+            <p className="text-xs text-ink-muted">River contamination to clinical alerts, across Europe -- prototype</p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs text-ink-muted">

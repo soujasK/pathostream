@@ -1,27 +1,22 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import type { NetworkStation, StationEvaluation } from '../api/types'
+import { formatDuration } from '../lib/format'
 
 interface StatusHeroProps {
   stations: NetworkStation[]
   worst: StationEvaluation | undefined
   networkLabel: string
-  /** Only the Mondego network reaches a hospital (CHUC) through CDS
-   * Hooks in this demo -- the Douro network has no linked hospital, so
-   * its confirmed/predicted copy talks about the cross-border regulatory
-   * consequence instead. See README's "Two rivers, two consequences". */
-  clinicalIntegration: boolean
-}
-
-function formatMinutes(minutes: number): string {
-  if (minutes < 60) return `${Math.round(minutes)} min`
-  return `${(minutes / 60).toFixed(1)} hr`
+  /** The river's real water-side counterpart (e.g. the Rhine's
+   * International Warning and Alarm Plan), when one was independently
+   * confirmed -- shown so the alert is placed in its real-world context. */
+  governanceName?: string | null
 }
 
 function nameOf(stations: NetworkStation[], id: string): string {
   return stations.find((s) => s.id === id)?.name ?? id
 }
 
-export function StatusHero({ stations, worst, networkLabel, clinicalIntegration }: StatusHeroProps) {
+export function StatusHero({ stations, worst, networkLabel, governanceName }: StatusHeroProps) {
   if (stations.length === 0) {
     return <div className="h-[220px] animate-pulse bg-surface-sunken" />
   }
@@ -33,6 +28,10 @@ export function StatusHero({ stations, worst, networkLabel, clinicalIntegration 
       <div className="text-[10px] text-white/50">EQR {worst.wfd.indicativeEqr}</div>
     </div>
   )
+
+  const counterpart = governanceName ? (
+    <p className="mt-2 max-w-xl text-xs text-white/50">Real water-side counterpart: {governanceName}.</p>
+  ) : null
 
   const isCritical = worst?.isOwnFlag || worst?.phase === 'confirmed'
   const isPredicted = worst && !isCritical && worst.phase === 'predicted'
@@ -73,15 +72,14 @@ export function StatusHero({ stations, worst, networkLabel, clinicalIntegration 
                       ? 'This station was auto-escalated from a sustained statistical turbidity anomaly -- an inferred early-warning signal, not a direct pathogen measurement.'
                       : 'This station currently shows an active biohazard signature.'
                     : `Modeled contamination front from ${nameOf(stations, worst!.sourceStationId)} is passing this station now.`}{' '}
-                  {clinicalIntegration
-                    ? 'CDS Hooks is firing an active-exposure card with an antimicrobial-stewardship suggestion.'
-                    : 'Under the Albufeira Convention, this is the kind of event Spain and Portugal share real-time hydrometeorological data about.'}
+                  CDS Hooks is firing an active-exposure card with an antimicrobial-stewardship suggestion.
                 </p>
+                {counterpart}
               </div>
               <div className="flex shrink-0 items-end gap-6">
                 <div>
                   <div className="text-[11px] font-semibold tracking-wide text-white/50 uppercase">Elapsed</div>
-                  <div className="text-4xl font-bold tabular-nums text-critical">{formatMinutes(worst!.elapsedMinutes)}</div>
+                  <div className="text-4xl font-bold tabular-nums text-critical">{formatDuration(worst!.elapsedMinutes)}</div>
                 </div>
                 {eqrBadge}
               </div>
@@ -108,17 +106,16 @@ export function StatusHero({ stations, worst, networkLabel, clinicalIntegration 
                 <p className="mt-2.5 max-w-xl text-sm leading-relaxed text-white/70">
                   A 1D advection-dispersion transport model predicts the plume from{' '}
                   {nameOf(stations, worst!.sourceStationId)} will arrive in an estimated{' '}
-                  {formatMinutes(worst!.forecast!.arrivalTimeMinutes - worst!.elapsedMinutes)}.{' '}
-                  {clinicalIntegration
-                    ? 'A precautionary CDS Hooks card is already live for patients there.'
-                    : 'This is a real FHIR RiskAssessment.prediction resource, ready to feed a cross-border early-warning process.'}
+                  {formatDuration(worst!.forecast!.arrivalTimeMinutes - worst!.elapsedMinutes)}. A precautionary CDS
+                  Hooks card is already live for patients there.
                 </p>
+                {counterpart}
               </div>
               <div className="flex shrink-0 items-end gap-6">
                 <div>
                   <div className="text-[11px] font-semibold tracking-wide text-white/50 uppercase">Arriving in</div>
                   <div className="text-4xl font-bold tabular-nums text-warning">
-                    {formatMinutes(worst!.forecast!.arrivalTimeMinutes - worst!.elapsedMinutes)}
+                    {formatDuration(worst!.forecast!.arrivalTimeMinutes - worst!.elapsedMinutes)}
                   </div>
                 </div>
                 {eqrBadge}
@@ -145,12 +142,11 @@ export function StatusHero({ stations, worst, networkLabel, clinicalIntegration 
                 </h1>
                 <p className="mt-2.5 max-w-xl text-sm leading-relaxed text-white/75">
                   {nameOf(stations, stations[0]!.id)} to {nameOf(stations, stations[stations.length - 1]!.id)} -- a 1D
-                  advection-dispersion transport model watches this network for upstream biohazard events and
-                  serializes predicted downstream risk as real FHIR R4 RiskAssessment resources
-                  {clinicalIntegration
-                    ? ', reaching CHUC through CDS Hooks before a downstream sensor would ever confirm it.'
-                    : ', ready to demonstrate a cross-border early-warning data exchange before a downstream sensor would ever confirm it.'}
+                  advection-dispersion transport model watches this river for upstream contamination and turns the
+                  predicted downstream risk into real FHIR R4 RiskAssessment resources and CDS Hooks alerts for
+                  clinicians, before a downstream sensor would ever confirm it.
                 </p>
+                {counterpart}
               </div>
               <div className="flex shrink-0 items-end gap-6">
                 <div>

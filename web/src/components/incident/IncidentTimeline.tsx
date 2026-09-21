@@ -16,7 +16,7 @@ export function IncidentTimeline({ entries }: { entries: TimelineEntry[] }) {
     return (
       <div className="py-10 text-center text-sm text-ink-muted">
         No incidents yet. Use the demo controls in the Water Authority Operations tab to report a contamination
-        event or inject a statistical anomaly, then come back here -- every real state change across both networks
+        event or inject a statistical anomaly, then come back here -- every real state change across all rivers
         appears here automatically, in plain language, as it happens.
       </div>
     )

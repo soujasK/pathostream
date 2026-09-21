@@ -1,4 +1,5 @@
 import type {
+  CatchmentsResponse,
   CdsHookResponse,
   DemoForecastsResponse,
   DemoStateResponse,
@@ -51,18 +52,20 @@ function buildPatientViewRequest(station: NetworkStation) {
   }
 }
 
-export type Catchment = 'mondego' | 'douro'
+/** A river's id from GET /demo/catchments (e.g. 'mondego', 'danube'). */
+export type Catchment = string
 
 /** The Mondego network kept its original un-prefixed /demo/* paths for
- * backward compatibility (see server.ts); Douro is served under
- * /demo/douro/*. Every catchment-scoped call below takes the catchment
+ * backward compatibility (see server.ts); every other river is served
+ * under /demo/<id>/*. Every catchment-scoped call below takes the river
  * explicitly rather than defaulting, so a caller can never accidentally
- * mix the two networks' data. */
+ * mix two rivers' data. */
 function catchmentPrefix(catchment: Catchment): string {
-  return catchment === 'mondego' ? '/demo' : '/demo/douro'
+  return catchment === 'mondego' ? '/demo' : `/demo/${catchment}`
 }
 
 export const api = {
+  catchments: () => request<CatchmentsResponse>('/demo/catchments'),
   stations: (catchment: Catchment) => request<NetworkStation[]>(`${catchmentPrefix(catchment)}/stations`),
   state: (catchment: Catchment) => request<DemoStateResponse>(`${catchmentPrefix(catchment)}/state`),
   forecasts: (catchment: Catchment) => request<DemoForecastsResponse>(`${catchmentPrefix(catchment)}/forecasts`),

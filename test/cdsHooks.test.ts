@@ -1,7 +1,7 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createServer } from "../src/cdsHooks/server.js";
-import { DOURO_STATIONS } from "../src/data/douroNetwork.js";
+import { ALL_STATIONS } from "../src/data/catchments.js";
 import { MONDEGO_STATIONS } from "../src/data/mondegoNetwork.js";
 import { resetAllStations, setStationState } from "../src/cdsHooks/exposureEngine.js";
 import { handlePatientView } from "../src/cdsHooks/patientView.js";
@@ -133,9 +133,9 @@ describe("POST /cds-services/patient-view", () => {
     expect(res.body.cards).toEqual([]);
   });
 
-  it("is silent for a patient address far from the monitored network", async () => {
+  it("is silent for a patient address far from every monitored river", async () => {
     await request(app).post("/demo/simulate").send({ stationId: SOURCE.id, flagged: true, severityIndex: 0.9 });
-    const res = await request(app).post("/cds-services/patient-view").send(patientViewRequest(38.7223, -9.1393)); // Lisbon
+    const res = await request(app).post("/cds-services/patient-view").send(patientViewRequest(37.9838, 23.7275)); // Athens: no monitored river station within 2 km
     expect(res.body.cards).toEqual([]);
   });
 
@@ -261,9 +261,9 @@ describe("POST /cds-services/order-select", () => {
 });
 
 describe("GET/POST /demo/telemetry (EWMA early-warning layer)", () => {
-  it("lists all stations across both networks with no history before any tick", async () => {
+  it("lists every station of every river with no history before any tick", async () => {
     const res = await request(app).get("/demo/telemetry");
-    expect(res.body.stations).toHaveLength(MONDEGO_STATIONS.length + DOURO_STATIONS.length);
+    expect(res.body.stations).toHaveLength(ALL_STATIONS.length);
     expect(res.body.stations.every((s: { latest: unknown }) => s.latest === null)).toBe(true);
   });
 

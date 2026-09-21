@@ -1,7 +1,5 @@
 /** Extracts (lat, lon) from a FHIR Patient's standard `geolocation`
- * extension (http://hl7.org/fhir/StructureDefinition/geolocation) -- the
- * same extension shape the sibling Python service's
- * `cds_service.py::_extract_address` parses. */
+ * extension (http://hl7.org/fhir/StructureDefinition/geolocation). */
 
 const GEOLOCATION_EXTENSION_URL = "http://hl7.org/fhir/StructureDefinition/geolocation";
 

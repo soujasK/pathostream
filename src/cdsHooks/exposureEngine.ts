@@ -1,7 +1,7 @@
 /**
  * Per-station exposure state + evaluation, generalized as a factory so
- * multiple networks (Mondego, Douro) can each get their own independent,
- * in-memory instance from the same logic -- deliberately simple/process-
+ * every river in the registry (data/catchments.ts) gets its own
+ * independent, in-memory instance from the same logic -- deliberately simple/process-
  * local: fine for a single-process demo, not a production multi-worker
  * deployment.
  *
@@ -13,9 +13,9 @@
  *
  * The module-level exports below (`setStationState`, `evaluateStationExposure`,
  * etc.) are the Mondego network's engine instance, kept as named exports
- * for backward compatibility with every existing caller/test -- a second
- * instance for the Douro network is created separately in
- * `douroExposureEngine.ts` via the same `createExposureEngine` factory.
+ * for backward compatibility with every existing caller/test -- every other
+ * river's instance is created in `catchmentEngines.ts` via the same
+ * `createExposureEngine` factory.
  */
 
 import { MONDEGO_FLOW_ORDER, MONDEGO_STATIONS, type NetworkStation } from "../data/mondegoNetwork.js";
@@ -100,7 +100,7 @@ export interface ExposureEngine {
 }
 
 /** Builds one independent exposure-engine instance (its own private
- * station-state map) bound to a given station network -- so two networks
+ * station-state map) bound to a given station network -- so two rivers
  * never share or collide on state, even if by coincidence they used the
  * same station id (they don't here: Mondego ids are `PT-*`, Douro ids mix
  * `ES-*`/`PT-*` with different names). */

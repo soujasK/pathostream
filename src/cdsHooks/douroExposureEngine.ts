@@ -1,16 +1,9 @@
 /**
- * The Douro network's own, independent exposure-engine instance -- see
- * `exposureEngine.ts`'s docstring for what this factory does and why
- * Mondego and Douro each get a private station-state map rather than
- * sharing one.
+ * The Douro network's exposure-engine instance, now one entry in the
+ * per-river registry (`catchmentEngines.ts`); kept as a named export for
+ * the callers/tests that import it directly.
  */
 
-import { DOURO_CATCHMENT_ID, DOURO_FLOW_ORDER, DOURO_MEAN_VELOCITY_MS, DOURO_STATIONS } from "../data/douroNetwork.js";
-import { createExposureEngine } from "./exposureEngine.js";
+import { engineFor } from "./catchmentEngines.js";
 
-export const douroEngine = createExposureEngine({
-  catchmentId: DOURO_CATCHMENT_ID,
-  stations: DOURO_STATIONS,
-  flowOrder: DOURO_FLOW_ORDER,
-  meanVelocityMs: DOURO_MEAN_VELOCITY_MS,
-});
+export const douroEngine = engineFor("douro");

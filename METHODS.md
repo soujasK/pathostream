@@ -10,10 +10,11 @@ plain-language "what's real vs illustrative" summary, see `README.md`.
 
 Sections 1-5 below describe the transport/forecasting model in terms of
 the original Mondego network; the same equations, code
-(`src/hydrology/*.ts`), and validation apply unchanged to the second,
-cross-border Douro/Duero network added later (`src/data/douroNetwork.ts`)
--- see §6b for that network's own, separate provenance and §8 for the
-statistical early-warning layer that covers both networks' stations from
+(`src/hydrology/*.ts`), and validation apply unchanged to every river added
+since (Douro, Tagus, Danube, Rhine, Elbe, Oder -- each a data file in
+`src/data/`, all listed in `src/data/catchments.ts`). See §6b for the
+Douro's provenance, §6c for the five later rivers, and §8 for the
+statistical early-warning layer that covers every river's stations from
 one shared implementation.
 
 ## 1. Governing equation
@@ -234,6 +235,93 @@ patient-address-proximity CDS demo, not because they are OneAquaHealth's
 literal field sites. See README's provenance table for the equivalent
 disclosure in plain terms.
 
+## 6c. Five more rivers: Tagus, Danube, Rhine, Elbe, Oder
+
+Each river's data file (`src/data/<river>Network.ts`) carries its own
+docstring and a `provenance` list that the dashboard renders; this section
+records the method and, above all, what was *not* confirmed.
+
+**Method (same as the Douro).** River facts (length, basin area, source,
+mouth) come from each river's own Wikipedia infobox, fetched directly.
+Every station is a city or town whose own infobox coordinates were fetched
+directly, with the article checked to confirm the place lies on that river.
+Coordinates are therefore CITY-CENTRE points, not gauges. 23 stations,
+5 rivers:
+
+| River | Length / basin | Stations (all fetched directly) |
+|---|---|---|
+| Tagus | 1,007 km / 80,100 km²; 47 km Spain-Portugal border | Toledo, Abrantes, Santarém, Lisbon |
+| Danube | 2,850 km / 801,463 km² | Passau, Vienna, Bratislava, Budapest, Vukovar, Ruse, Galați |
+| Rhine | 1,230 km / 185,000 km² | Strasbourg, Mainz, Cologne, Lobith |
+| Elbe | 1,112 km / 148,268 km² | Ústí nad Labem, Dresden, Magdeburg, Hamburg |
+| Oder | 840 km / 119,074 km² | Opole, Wrocław, Frankfurt (Oder), Szczecin |
+
+Together with Mondego (6) and Douro (4) that is 33 stations in 13 EU member
+states (PT, ES, FR, DE, NL, AT, SK, HU, HR, BG, RO, CZ, PL), computed from
+the data rather than asserted.
+
+**Real water-side governance, and how strongly each was confirmed.**
+- *Rhine — confirmed directly on iksr.org:* since 1985 seven international
+  main warning centres cooperate within the International Warning and Alarm
+  Plan Rhine, which warns and informs "the authorities and drinking water
+  works in the Rhine bordering countries" of sudden pollution in the Rhine,
+  Neckar, Main and minor tributaries, mainly via an internet application.
+  The recipients the page names are authorities and water works.
+- *Danube — confirmed only modestly:* several ICPDR pages surfaced in search
+  describe an Accident Emergency Warning System that notifies downstream
+  countries of accidental transboundary pollution by SMS and e-mail. The
+  ICPDR site returned HTTP 403 to a direct fetch, so no operating history or
+  incident counts are quoted anywhere.
+- *Elbe — confirmed via search snippets, not fetched directly:* the ICPER
+  (established 1990) works on an International Elbe Warning and Alarm Plan
+  and on ALAMO, an alarm model that forecasts the spread of harmful
+  substances. The water side therefore already forecasts spread; this
+  prototype's contribution is the clinical hand-off, not the transport model.
+- *Tagus — the Albufeira Convention* (see §6b), which covers the Tejo as
+  well as the Douro. A pollution-notification clause was not confirmed.
+- *Oder — a real failure, not an institution.* From Wikipedia's article on
+  the 2022 Oder environmental disaster (fetched directly): fish die-offs
+  were first reported near Oława in March 2022 and resumed at the end of
+  July; on 11 August volunteers removed at least 10 tonnes from a 200 km
+  stretch; over 100 tonnes were removed from Polish sections and 35 from
+  German ones. A February 2023 European Commission report concluded the
+  direct cause was prymnesin toxins from *Prymnesium parvum*, enabled by
+  saline industrial wastewater discharge on the Polish side. The article
+  states German officials complained about a lack of communication from
+  Polish officials and that Polish authorities were slow to react.
+
+**What is deliberately not claimed.**
+- That this prototype would have prevented or even detected the Oder event.
+  The cause was a toxic algal bloom; the demo's turbidity control chart is
+  not claimed to catch that. The Oder is included for the missing
+  cross-border hand-off, not the sensor.
+- That any hospital exists in the loop outside Coimbra (a test asserts CHUC
+  is the only named hospital in the registry).
+- Two station caveats stated by the articles themselves: Strasbourg's
+  coordinates are its centre on the Ill, ~4 km from the Rhine, and Lobith is
+  only "traditionally" where the Rhine enters the Netherlands (really ~4 km
+  upstream, near Spijk).
+- The Danube's order is a course-following sequence, not a river-kilometre
+  survey; the reach between Vukovar and Ruse runs through/along non-EU
+  Serbia, where no station is modeled. (Rhine, Elbe, Oder and Tagus order is
+  checked by test: latitude or longitude is strictly monotonic along the
+  confirmed flow direction.)
+
+**Why predicted arrival times on these rivers are optimistic.** Three
+compounding, disclosed simplifications: (1) distance between consecutive
+stations is the straight-line haversine, always shorter than the river
+path (a Vukovar → Ruse straight line is ~570 km; the river's route through
+Serbia is much longer); (2) one unverified placeholder velocity (1.0 m/s)
+is used for all four large rivers, deliberately *not* differentiated river
+by river because different invented numbers would imply knowledge that
+isn't here; (3) the default dispersion coefficient (8 m²/s) is a
+small-channel value, so plume spread — hence the width of the
+arrival/clearance window — is understated on a river this size (§3's
+Fischer/Liu estimator would need real channel geometry). The point the
+numbers do support is scale, not precision: plume travel time is minutes on
+a Coimbra reach but days on the Danube, and that lead time is the argument
+for warning downstream clinicians.
+
 ## 8. Statistical early-warning layer (EWMA control chart)
 
 Sections 1-6 above are the *transport and forecasting* model: given that a
@@ -334,6 +422,14 @@ that same `flagged` state.
     alert-fatigue and regulatory-classification questions (§9) that this
     prototype does not resolve; it exists to demonstrate the end-to-end
     interoperability chain.
+- **Scaling consequence, and how the timeline handles it.** With 33
+  stations on a ~1.2 s clock, single out-of-control ticks (which a 3-sigma
+  EWMA produces at roughly 1 in 370 station-ticks in steady state) occur
+  every few seconds somewhere in the network. The dashboard's Incident
+  Timeline therefore does not narrate a one-tick blip at all: an anomaly is
+  narrated once it lasts 2 consecutive ticks, and escalation still requires
+  5. This changes only what is *displayed* -- detection and escalation logic
+  are untouched.
 - **A standard this is NOT claiming conformance to**: ISO/IEEE 11073
   Personal Health Data Standards is a real, independently confirmed IEEE
   standards family (11073.org; IEEE Standards Association) -- but it

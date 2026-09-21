@@ -41,7 +41,7 @@
  *    defaults, same disclosure as `mondegoNetwork.ts`.
  */
 
-import type { NetworkStation } from "./mondegoNetwork.js";
+import type { CountryCode, NetworkStation } from "./networkTypes.js";
 
 export const DOURO_CATCHMENT_ID = "douro-transboundary";
 
@@ -58,7 +58,7 @@ export const ALBUFEIRA_CONVENTION_NOTE =
   "monitoring provisions for the shared Minho, Lima, Douro, Tejo and Guadiana basins.";
 
 export interface CrossBorderStation extends NetworkStation {
-  country: "ES" | "PT";
+  country: CountryCode;
 }
 
 export const DOURO_STATIONS: CrossBorderStation[] = [

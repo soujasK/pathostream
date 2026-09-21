@@ -1,13 +1,9 @@
 import type { NetworkForecast, NetworkStation } from '../../api/types'
+import { formatDuration } from '../../lib/format'
 
 interface ForecastPanelProps {
   forecasts: NetworkForecast[]
   stations: NetworkStation[]
-}
-
-function formatMinutes(minutes: number): string {
-  if (minutes < 60) return `${Math.round(minutes)} min`
-  return `${(minutes / 60).toFixed(1)} hr`
 }
 
 function nameOf(stations: NetworkStation[], id: string): string {
@@ -32,11 +28,11 @@ export function ForecastPanel({ forecasts, stations }: ForecastPanelProps) {
             <div className="text-sm font-semibold text-ink">
               {nameOf(stations, forecast.sourceStationId)} &rarr; {nameOf(stations, forecast.targetStationId)}
             </div>
-            <div className="text-xs text-ink-muted">{forecast.transport.distanceKm.toFixed(2)} km downstream</div>
+            <div className="text-xs text-ink-muted">{forecast.transport.distanceKm.toFixed(2)} km downstream (straight-line)</div>
           </div>
           <div className="text-right">
             <div className="text-lg font-bold tabular-nums text-warning">
-              {formatMinutes(forecast.transport.peakTimeMinutes)}
+              {formatDuration(forecast.transport.peakTimeMinutes)}
             </div>
             <div className="text-[10px] font-semibold tracking-wide text-ink-faint uppercase">peak ETA</div>
           </div>

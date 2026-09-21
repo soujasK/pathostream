@@ -1,8 +1,7 @@
 /**
  * CDS Hooks request/response shapes.
  *
- * VERSION NOTE (same caveat as the sibling Python service's
- * app/models/cds_hooks.py): HL7's current *officially published* CDS Hooks
+ * VERSION NOTE: HL7's current *officially published* CDS Hooks
  * version is 2.0.1 (STU2); 3.0.0 exists only as a normative *ballot* at
  * https://cds-hooks.hl7.org at the time of writing. The `patient-view`
  * shapes below (discovery manifest; hookInstance/hook/context/prefetch;

@@ -1,9 +1,7 @@
 /**
- * Multi-station downstream contamination-propagation forecasting -- a
- * direct port of the sibling Python service's
- * `app/core/propagation_engine.py`, generalizing this module's earlier
- * fixed 2-point (single upstream/downstream pair) forecast to an
- * arbitrary N-station network walked in a declared flow order.
+ * Multi-station downstream contamination-propagation forecasting: an
+ * arbitrary N-station network walked in a declared flow order (generalizing
+ * an earlier fixed 2-point upstream/downstream pair).
  */
 
 import { computeTransportForecast, type TransportForecast } from "./advectionDispersion.js";

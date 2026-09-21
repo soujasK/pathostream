@@ -3,8 +3,6 @@ import clsx from 'clsx'
 import { useEffect, useMemo, useState } from 'react'
 import { api, type Catchment } from './api/client'
 import type { StationEvaluation } from './api/types'
-import { useIncidentLog } from './hooks/useIncidentLog'
-import { useTelemetryTick } from './hooks/useTelemetryTick'
 import { CdsCardView } from './components/CdsCardView'
 import { DisclaimerBar } from './components/DisclaimerBar'
 import { Header } from './components/Header'
@@ -13,19 +11,16 @@ import { ViewTabs, type ViewId } from './components/nav/ViewTabs'
 import { ProvenanceNote } from './components/ProvenanceNote'
 import { StatusHero } from './components/StatusHero'
 import { EarlyWarningPanel } from './components/reach/EarlyWarningPanel'
+import { EuropeMap } from './components/reach/EuropeMap'
 import { ForecastPanel } from './components/reach/ForecastPanel'
 import { PatientStationPicker } from './components/reach/PatientStationPicker'
 import { ReachMap } from './components/reach/ReachMap'
 import { SimulatorControls } from './components/reach/SimulatorControls'
 import { Panel, PanelHeader } from './components/ui/Panel'
 import { Reveal } from './components/ui/Reveal'
-
-const POLL_INTERVAL_MS = 3000
-
-const CATCHMENTS: { id: Catchment; label: string; sub: string }[] = [
-  { id: 'mondego', label: 'Mondego', sub: 'Coimbra, Portugal' },
-  { id: 'douro', label: 'Douro', sub: 'Cross-border, Spain → Portugal' },
-]
+import { useAllCatchmentData, useCatchmentRegistry } from './hooks/useCatchments'
+import { useIncidentLog } from './hooks/useIncidentLog'
+import { useTelemetryTick } from './hooks/useTelemetryTick'
 
 function worstEvaluation(evaluations: StationEvaluation[]): StationEvaluation | undefined {
   const score = (e: StationEvaluation): number => {
@@ -36,65 +31,41 @@ function worstEvaluation(evaluations: StationEvaluation[]): StationEvaluation | 
   return [...evaluations].sort((a, b) => score(b) - score(a) || b.probability - a.probability)[0]
 }
 
-/** One network's data, fetched independently so switching the Operations
- * tab's active catchment never loses the other network's live polling --
- * the Incident Timeline needs both regardless of which is on screen. */
-function useCatchmentData(catchment: Catchment) {
-  const stationsQuery = useQuery({
-    queryKey: ['stations', catchment],
-    queryFn: () => api.stations(catchment),
-    staleTime: Infinity,
-  })
-  const stateQuery = useQuery({
-    queryKey: ['state', catchment],
-    queryFn: () => api.state(catchment),
-    refetchInterval: POLL_INTERVAL_MS,
-  })
-  const forecastsQuery = useQuery({
-    queryKey: ['forecasts', catchment],
-    queryFn: () => api.forecasts(catchment),
-    refetchInterval: POLL_INTERVAL_MS,
-  })
-
-  return {
-    stations: stationsQuery.data ?? [],
-    stationStates: stateQuery.data?.stations ?? [],
-    evaluations: stateQuery.data?.evaluations ?? [],
-    forecasts: forecastsQuery.data?.forecasts ?? [],
-  }
-}
-
 export default function App() {
   const queryClient = useQueryClient()
   const [activeView, setActiveView] = useState<ViewId>('operations')
-  const [activeCatchment, setActiveCatchment] = useState<Catchment>('mondego')
 
-  const mondego = useCatchmentData('mondego')
-  const douro = useCatchmentData('douro')
-  const active = activeCatchment === 'mondego' ? mondego : douro
+  // Every river comes from the backend registry -- nothing here names one.
+  const registry = useCatchmentRegistry()
+  const data = useAllCatchmentData(registry.catchments)
+  const [selectedCatchment, setSelectedCatchment] = useState<Catchment | undefined>(undefined)
+  const activeCatchment = selectedCatchment ?? registry.catchments[0]?.id ?? ''
+  const active = data[activeCatchment]
 
-  // The hero banner follows the Operations tab's catchment switcher only
-  // while that tab is open -- the Emergency Department view is inherently
-  // Mondego-scoped (see "Two rivers, two consequences"), and Timeline is
-  // a shared view, so both fall back to Mondego rather than showing a
-  // stale Douro banner behind an unrelated screen.
-  const heroCatchment: Catchment = activeView === 'operations' ? activeCatchment : 'mondego'
-  const hero = heroCatchment === 'mondego' ? mondego : douro
-  const worst = useMemo(() => worstEvaluation(hero.evaluations), [hero.evaluations])
+  const allStations = registry.catchments.flatMap((c) => data[c.id]?.stations ?? [])
+  const totalStations = registry.catchments.reduce((sum, c) => sum + c.stationCount, 0)
 
+  // The patient's home address is any station on any river; default to the
+  // third Coimbra station, the original demo patient.
   const [selectedStationId, setSelectedStationId] = useState<string | undefined>(undefined)
-  const effectiveSelected = selectedStationId ?? mondego.stations[2]?.id // default: Parque Verde do Mondego
-  const selectedStation = mondego.stations.find((s) => s.id === effectiveSelected)
+  const effectivePatient = selectedStationId ?? data['mondego']?.stations[2]?.id ?? allStations[0]?.id
+  const patientStation = allStations.find((s) => s.id === effectivePatient)
+  const patientCatchmentId = registry.catchments.find((c) =>
+    data[c.id]?.stations.some((s) => s.id === effectivePatient),
+  )?.id
+  const patientPhase = data[patientCatchmentId ?? '']?.evaluations.find((e) => e.stationId === effectivePatient)?.phase
   const cdsQuery = useQuery({
-    queryKey: [
-      'cds-patient-view',
-      effectiveSelected,
-      mondego.evaluations.find((e) => e.stationId === effectiveSelected)?.phase,
-    ],
-    queryFn: () => api.patientView(selectedStation!),
-    enabled: selectedStation !== undefined,
+    queryKey: ['cds-patient-view', effectivePatient, patientPhase],
+    queryFn: () => api.patientView(patientStation!),
+    enabled: patientStation !== undefined,
     placeholderData: (previous) => previous,
   })
+
+  // The hero follows the river being looked at: the one selected on the
+  // Operations/Timeline tabs, or the patient's river on the ED tab.
+  const heroCatchmentId = activeView === 'emergency' ? (patientCatchmentId ?? activeCatchment) : activeCatchment
+  const hero = data[heroCatchmentId]
+  const worst = useMemo(() => worstEvaluation(hero?.evaluations ?? []), [hero?.evaluations])
 
   const telemetry = useTelemetryTick()
 
@@ -112,11 +83,14 @@ export default function App() {
     void queryClient.invalidateQueries({ queryKey: ['forecasts'] })
   }, [escalatedKey, queryClient])
 
-  const incidentEntries = useIncidentLog({
-    mondego: { catchmentLabel: 'Mondego', stations: mondego.stations, evaluations: mondego.evaluations },
-    douro: { catchmentLabel: 'Douro', stations: douro.stations, evaluations: douro.evaluations },
-    telemetry: telemetry.stations,
-  })
+  const incidentEntries = useIncidentLog(
+    registry.catchments.map((c) => ({
+      catchmentLabel: c.label,
+      stations: data[c.id]?.stations ?? [],
+      evaluations: data[c.id]?.evaluations ?? [],
+    })),
+    telemetry.stations,
+  )
 
   const invalidateActive = async () => {
     await queryClient.invalidateQueries({ queryKey: ['state', activeCatchment] })
@@ -129,6 +103,7 @@ export default function App() {
   }
 
   const handleFastForward = async (minutes: number) => {
+    if (!active) return
     const flaggedStates = active.stationStates.filter((s) => s.flagged)
     await Promise.all(
       flaggedStates.map((s) => {
@@ -157,39 +132,69 @@ export default function App() {
     await api.telemetryClear(stationId)
   }
 
+  const activeInfo = active?.info
+
   return (
     <div className="min-h-full">
       <Header />
       <StatusHero
-        stations={hero.stations}
+        stations={hero?.stations ?? []}
         worst={worst}
-        networkLabel={heroCatchment === 'mondego' ? 'Mondego River network' : 'Douro cross-border network'}
-        clinicalIntegration={heroCatchment === 'mondego'}
+        networkLabel={hero ? `${hero.info.label} river network` : ''}
+        governanceName={hero?.info.governance?.name}
       />
       <DisclaimerBar />
       <ViewTabs active={activeView} onChange={setActiveView} />
 
       <main className="mx-auto max-w-7xl px-6 py-6">
-        {activeView === 'operations' && (
+        {activeView === 'operations' && active && activeInfo && (
           <>
-            <div className="mb-6 flex items-center gap-2">
-              <span className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Network:</span>
-              {CATCHMENTS.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setActiveCatchment(c.id)}
-                  className={clsx(
-                    'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                    activeCatchment === c.id
-                      ? 'border-brand-700 bg-brand-700 text-white'
-                      : 'border-border bg-surface-muted text-ink-muted hover:border-brand-300 hover:text-ink',
-                  )}
-                >
-                  {c.label} <span className="opacity-70">&middot; {c.sub}</span>
-                </button>
-              ))}
-            </div>
+            <Reveal delay={0.03}>
+              <Panel padded={false} className="mb-6 overflow-hidden">
+                <div className="border-b border-border px-5 py-4">
+                  <PanelHeader
+                    title="Coverage"
+                    subtitle={`${registry.catchments.length} rivers · ${totalStations} stations · ${registry.countriesCovered.length} EU member states -- real, verified stations; lines are schematic, not the rivers' courses. Click a river to open it.`}
+                  />
+                </div>
+                <div className="h-[380px]">
+                  <EuropeMap
+                    rivers={registry.catchments.map((c) => ({
+                      id: c.id,
+                      label: c.label,
+                      stations: data[c.id]?.stations ?? [],
+                      evaluations: data[c.id]?.evaluations ?? [],
+                    }))}
+                    activeId={activeCatchment}
+                    onSelect={setSelectedCatchment}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-2 border-t border-border bg-surface-muted px-5 py-3">
+                  <span className="text-xs font-semibold tracking-wide text-ink-muted uppercase">River:</span>
+                  {registry.catchments.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setSelectedCatchment(c.id)}
+                      title={c.region}
+                      className={clsx(
+                        'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                        activeCatchment === c.id
+                          ? 'border-brand-700 bg-brand-700 text-white'
+                          : 'border-border bg-surface text-ink-muted hover:border-brand-300 hover:text-ink',
+                      )}
+                    >
+                      {c.label} <span className="opacity-70">&middot; {c.stationCount}</span>
+                    </button>
+                  ))}
+                  <span className="ml-auto text-xs text-ink-muted">
+                    {activeInfo.label}: {activeInfo.region}
+                    {activeInfo.riverLengthKm ? ` · ${activeInfo.riverLengthKm.toLocaleString()} km` : ''}
+                    {activeInfo.countries.length > 1 ? ` · ${activeInfo.countries.length} countries` : ''}
+                  </span>
+                </div>
+              </Panel>
+            </Reveal>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <div className="space-y-6">
@@ -197,12 +202,8 @@ export default function App() {
                   <Panel padded={false} className="overflow-hidden">
                     <div className="border-b border-border px-5 py-4">
                       <PanelHeader
-                        title="Monitored network"
-                        subtitle={
-                          activeCatchment === 'mondego'
-                            ? `${active.stations.length} real Mondego landmarks, Coimbra (illustrative geometry)`
-                            : `${active.stations.length} real stations, Spain → Portugal (illustrative geometry)`
-                        }
+                        title={`${activeInfo.label} monitored reach`}
+                        subtitle={`${active.stations.length} real stations, ${activeInfo.region} (illustrative geometry)`}
                       />
                     </div>
                     <div className="h-[460px]">
@@ -210,7 +211,7 @@ export default function App() {
                         key={activeCatchment}
                         stations={active.stations}
                         evaluations={active.evaluations}
-                        selectedStationId={effectiveSelected}
+                        selectedStationId={effectivePatient}
                         onSelectStation={setSelectedStationId}
                       />
                     </div>
@@ -221,7 +222,7 @@ export default function App() {
                   <Panel>
                     <PanelHeader
                       title="Predicted downstream impact"
-                      subtitle="Propagation forecast across the network -- illustrative model, not calibrated hydrology"
+                      subtitle="Propagation forecast across this river -- illustrative model, not calibrated hydrology"
                     />
                     <ForecastPanel forecasts={active.forecasts} stations={active.stations} />
                   </Panel>
@@ -258,7 +259,7 @@ export default function App() {
 
               <div className="space-y-6">
                 <Reveal delay={0.16}>
-                  <ProvenanceNote />
+                  <ProvenanceNote catchments={registry.catchments} activeId={activeCatchment} />
                 </Reveal>
               </div>
             </div>
@@ -272,7 +273,11 @@ export default function App() {
                 <Panel>
                   <PanelHeader
                     title="CDS Hooks patient-view card"
-                    subtitle="Live output of POST /cds-services/patient-view"
+                    subtitle={
+                      patientStation
+                        ? `For a patient living near ${patientStation.name} -- live output of POST /cds-services/patient-view`
+                        : 'Live output of POST /cds-services/patient-view'
+                    }
                   />
                   <CdsCardView card={cdsQuery.data?.cards[0]} isLoading={cdsQuery.isLoading} />
                 </Panel>
@@ -284,14 +289,19 @@ export default function App() {
                 <Panel>
                   <PanelHeader title="Patient context" />
                   <p className="mb-3 text-xs text-ink-muted">
-                    This clinical view is scoped to the Mondego network only — CHUC, the hospital named in this
-                    demo's CDS Hooks cards, sits on the Mondego. The Douro cross-border network has no linked
-                    hospital in this prototype; see "Two rivers, two consequences" in README.md.
+                    Pick any station on any river as the patient&rsquo;s home address. The alert works the same
+                    everywhere; a hospital is named only in Coimbra (CHUC, a real hospital used as framing) -- on
+                    every other river the card says &ldquo;your institution&rsquo;s protocol&rdquo; rather than
+                    inventing one.
                   </p>
                   <PatientStationPicker
-                    stations={mondego.stations}
-                    evaluations={mondego.evaluations}
-                    selectedStationId={effectiveSelected}
+                    groups={registry.catchments.map((c) => ({
+                      id: c.id,
+                      label: `${c.label} · ${c.region}`,
+                      stations: data[c.id]?.stations ?? [],
+                      evaluations: data[c.id]?.evaluations ?? [],
+                    }))}
+                    selectedStationId={effectivePatient}
                     onSelectStation={setSelectedStationId}
                   />
                 </Panel>
@@ -305,7 +315,7 @@ export default function App() {
             <Panel>
               <PanelHeader
                 title="Incident timeline"
-                subtitle="Every real state change across both networks, in plain language, as it happens"
+                subtitle={`Every real state change across all ${registry.catchments.length} rivers, in plain language, as it happens`}
               />
               <IncidentTimeline entries={incidentEntries} />
             </Panel>
