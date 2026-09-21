@@ -223,7 +223,7 @@ chronological narrative derived by diffing the same real polled state
 │       ├── orderSelect.ts           order-select stewardship-trigger handler (Mondego-only)
 │       ├── discovery.ts             /cds-services manifest
 │       └── server.ts                Express app; registers /demo/* (Mondego) and /demo/douro/* (Douro) from one generic route function
-├── test/                            109 tests: hydrology math, PDE validation, FHIR shape, CDS Hooks (incl. card provenance wording), exposure phases, EWMA/telemetry/auto-escalation, Douro network
+├── test/                            111 tests: hydrology math, PDE validation, FHIR shape, CDS Hooks (incl. card provenance wording), exposure phases, EWMA/telemetry/auto-escalation, Douro network
 ├── web/                             React + Vite + Tailwind + MapLibre dashboard (3 views: Operations, Emergency Department, Incident Timeline)
 ├── METHODS.md                       governing equations, parameter provenance, citations
 └── index.html                       static "about this project" landing page
@@ -234,7 +234,7 @@ chronological narrative derived by diffing the same real polled state
 ```bash
 npm install
 npm run dev     # API on http://127.0.0.1:4300, auto-reload
-npm test        # 109 tests
+npm test        # 111 tests
 npm run build   # tsc -> dist/
 
 # Dashboard (separate terminal, needs the API running above)

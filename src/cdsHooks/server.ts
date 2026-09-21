@@ -53,7 +53,15 @@ function registerCatchmentRoutes(app: ReturnType<typeof express>, options: Catch
       return;
     }
     const flaggedAt = new Date(Date.now() - (body.elapsedMinutes ?? 0) * 60_000);
-    const state = engine.setStationState(body.stationId, body.flagged ?? true, body.severityIndex ?? 0.8, flaggedAt);
+    const flagged = body.flagged ?? true;
+    // Re-flagging an already-flagged station is how the demo's fast-forward
+    // backdates its clock -- that must not rewrite HOW the station was
+    // confirmed (an auto-escalation would silently become "operator" and
+    // start claiming a direct biohazard signature). Only a fresh report on
+    // an unflagged station is an operator report.
+    const existing = engine.getStationState(body.stationId);
+    const confirmedVia = flagged && existing.flagged ? existing.confirmedVia : "operator";
+    const state = engine.setStationState(body.stationId, flagged, body.severityIndex ?? 0.8, flaggedAt, confirmedVia);
     res.json({ stationId: body.stationId, ...state });
   });
 

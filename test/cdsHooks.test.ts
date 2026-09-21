@@ -105,6 +105,25 @@ describe("POST /demo/simulate", () => {
     const evaluation = await evaluationFor(TARGET.id);
     expect(evaluation?.phase).toBe("cleared");
   });
+
+  async function confirmedViaFor(stationId: string): Promise<string | undefined> {
+    const res = await request(app).get("/demo/state");
+    return (res.body.stations as { stationId: string; confirmedVia: string }[]).find((s) => s.stationId === stationId)
+      ?.confirmedVia;
+  }
+
+  it("records a fresh manual report as operator-confirmed", async () => {
+    await request(app).post("/demo/simulate").send({ stationId: SOURCE.id, flagged: true, severityIndex: 0.9 });
+    expect(await confirmedViaFor(SOURCE.id)).toBe("operator");
+  });
+
+  it("keeps a station's confirmation provenance when re-flagged to fast-forward its clock", async () => {
+    setStationState(SOURCE.id, true, 0.7, new Date(), "statistical-detection");
+    await request(app)
+      .post("/demo/simulate")
+      .send({ stationId: SOURCE.id, flagged: true, severityIndex: 0.7, elapsedMinutes: 20 });
+    expect(await confirmedViaFor(SOURCE.id)).toBe("statistical-detection");
+  });
 });
 
 describe("POST /cds-services/patient-view", () => {

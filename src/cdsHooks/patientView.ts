@@ -102,8 +102,9 @@ export function handlePatientView(request: PatientViewRequest): CdsHookResponse 
       `model (Taylor-dispersion approximation; ${forecast.distanceKm.toFixed(2)} km at an assumed 0.36 m/s mean ` +
       `velocity -- illustrative, not a calibrated gauge reading) predicts the contamination front will reach ` +
       `${station.name} in an estimated ${forecast.arrivalTimeMinutes.toFixed(0)}-${forecast.clearanceTimeMinutes.toFixed(0)} ` +
-      `minutes (peak ~${forecast.peakTimeMinutes.toFixed(0)} min), estimated probability ` +
-      `${Math.round(evaluation.probability * 100)}%. Indicative WFD ecological status if unmitigated: ${evaluation.wfd.eqrClass} ` +
+      `minutes (peak ~${forecast.peakTimeMinutes.toFixed(0)} min); modeled chance the front has ALREADY reached this ` +
+      `station: ${Math.round(evaluation.probability * 100)}% (this starts near 0% and rises as the window approaches -- ` +
+      `it is not the chance the contamination reaches you at all). Indicative WFD ecological status if unmitigated: ${evaluation.wfd.eqrClass} ` +
       `(${evaluation.wfd.note}). No local confirmation yet -- this is a precautionary early-warning, not a confirmed ` +
       "exposure.",
     source: { label: "OAH-Mondego (downstream propagation forecast, deterministic)" },
