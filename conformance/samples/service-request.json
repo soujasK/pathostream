@@ -1,0 +1,16 @@
+{
+  "resourceType": "ServiceRequest",
+  "status": "draft",
+  "intent": "order",
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "82195-9"
+      }
+    ]
+  },
+  "subject": {
+    "reference": "Patient/demo-patient"
+  }
+}

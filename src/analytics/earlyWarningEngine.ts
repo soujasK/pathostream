@@ -19,23 +19,22 @@
 
 import { engineForStation } from "../cdsHooks/catchmentEngines.js";
 import { ALL_STATIONS } from "../data/catchments.js";
+import {
+  AUTO_ESCALATION_SEVERITY,
+  ESCALATION_THRESHOLD_TICKS,
+  EWMA_L,
+  EWMA_LAMBDA,
+} from "./detectorConfig.js";
 import { EwmaDetector, type EwmaResult } from "./ewma.js";
 import { nextTurbidityReading, NORMAL_BASELINE, type RandomSource } from "./telemetryStream.js";
 
 const MAX_HISTORY = 60;
 
-/** A station must be statistically out-of-control for this many
- * *consecutive* ticks before it is auto-escalated -- long enough that a
- * single noisy sample can't trigger it (the false-alarm tests in
- * ewma.test.ts show that's rare but not impossible over many ticks), and
- * still fast against the ~1.2s/tick demo clock (5 ticks is ~6s). */
-export const ESCALATION_THRESHOLD_TICKS = 5;
-
-/** Severity assigned to an auto-escalated confirmation -- a fixed,
- * documented value distinct from an operator's default 0.9 (a human
- * directly reporting ground truth), since this is inferred from a
- * statistical signal rather than observed directly. */
-export const AUTO_ESCALATION_SEVERITY = 0.7;
+// The escalation rule's constants live in detectorConfig.ts so the offline
+// evaluation (src/evaluation, EVALUATION.md) characterises exactly this
+// design; re-exported here because callers and tests import them from the
+// engine.
+export { AUTO_ESCALATION_SEVERITY, ESCALATION_THRESHOLD_TICKS };
 
 /** Every river's stations share this one telemetry/detection registry,
  * keyed by station id -- safe because the catchment registry
@@ -54,8 +53,8 @@ interface StationTelemetry {
 
 function freshDetector(): EwmaDetector {
   return new EwmaDetector({
-    lambda: 0.25,
-    L: 3,
+    lambda: EWMA_LAMBDA,
+    L: EWMA_L,
     targetMean: NORMAL_BASELINE.meanNtu,
     targetStdDev: NORMAL_BASELINE.stdDevNtu,
   });

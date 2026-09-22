@@ -34,7 +34,12 @@ export function ForecastPanel({ forecasts, stations }: ForecastPanelProps) {
             <div className="text-lg font-bold tabular-nums text-warning">
               {formatDuration(forecast.transport.peakTimeMinutes)}
             </div>
-            <div className="text-[10px] font-semibold tracking-wide text-ink-faint uppercase">peak ETA</div>
+            <div
+              className="text-[10px] font-semibold tracking-wide text-ink-faint uppercase"
+              title="Peak ETA. The range shows how far it could move if the assumed river velocity is off by about a factor of 2 either way -- a sensitivity range, not a calibrated interval."
+            >
+              peak ETA &middot; {formatDuration(forecast.peakBand.lowMinutes)}&ndash;{formatDuration(forecast.peakBand.highMinutes)}
+            </div>
           </div>
         </div>
       ))}

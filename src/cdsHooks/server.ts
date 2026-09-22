@@ -10,10 +10,19 @@ import {
 } from "../analytics/earlyWarningEngine.js";
 import { CATCHMENTS, COUNTRIES_COVERED, routePrefix, stationAnywhere } from "../data/catchments.js";
 import type { CatchmentDefinition, NetworkStation } from "../data/networkTypes.js";
+import { collectionBundle } from "../fhir/bundle.js";
 import { buildForecastRiskAssessment } from "../fhir/riskAssessment.js";
+import { mulberry32 } from "../evaluation/prng.js";
+import { travelTimeBand } from "../hydrology/uncertainty.js";
+import { createCdsAuthMiddleware, loadCdsAuthFromEnv, type CdsAuthConfig } from "./auth.js";
 import { engineFor } from "./catchmentEngines.js";
-import { discoveryManifest } from "./discovery.js";
+import {
+  discoveryManifest,
+  ORDER_SELECT_SERVICE_ID,
+  PATIENT_VIEW_SERVICE_ID,
+} from "./discovery.js";
 import type { ExposureEngine } from "./exposureEngine.js";
+import { feedbackSummary, recordFeedback } from "./feedback.js";
 import { handleOrderSelect } from "./orderSelect.js";
 import { handlePatientView } from "./patientView.js";
 import type { OrderSelectRequest, PatientViewRequest } from "./types.js";
@@ -99,6 +108,8 @@ function registerCatchmentRoutes(app: ReturnType<typeof express>, options: Catch
       sourceStationId: f.sourceStationId,
       targetStationId: f.targetStationId,
       transport: f.transport,
+      // Sensitivity of the peak ETA to the placeholder velocity (see uncertainty.ts).
+      peakBand: travelTimeBand(f.transport.peakTimeMinutes),
     }));
     res.json({ catchmentId, forecasts });
   });
@@ -118,13 +129,34 @@ function registerCatchmentRoutes(app: ReturnType<typeof express>, options: Catch
         probability: evaluation.probability,
         now,
       });
-      return [{ resource }];
+      return [resource];
     });
-    res.json({ resourceType: "Bundle", type: "collection", entry: entries });
+    res.json(collectionBundle(entries));
   });
 }
 
-export function createServer() {
+export interface ServerOptions {
+  /** CDS Hooks JWT authentication (see auth.ts). Omit to read it from the
+   * environment (OAH_CDS_TRUSTED_JWKS); pass `undefined` explicitly for the
+   * open demo mode regardless of the environment. */
+  cdsAuth?: CdsAuthConfig | undefined;
+  /** Mount the /demo/* control routes (mark a station contaminated, inject an
+   * anomaly, fast-forward...). They mutate state with no authentication --
+   * fine for a demo, a spoofing hazard anywhere else (SAFETY_CASE.md H3).
+   * Default: on, unless OAH_DEMO_ROUTES=off. */
+  demoRoutes?: boolean | undefined;
+  /** Seed for the synthetic telemetry noise, for reproducible runs. Default:
+   * OAH_SEED if set, else unseeded (Math.random). */
+  seed?: number | undefined;
+}
+
+export function createServer(options: ServerOptions = {}) {
+  const cdsAuth = "cdsAuth" in options ? options.cdsAuth : loadCdsAuthFromEnv(process.env);
+  const demoRoutes = options.demoRoutes ?? process.env.OAH_DEMO_ROUTES !== "off";
+  const envSeed = process.env.OAH_SEED === undefined ? undefined : Number(process.env.OAH_SEED);
+  const seed = "seed" in options ? options.seed : envSeed !== undefined && Number.isFinite(envSeed) ? envSeed : undefined;
+  const telemetryRng = seed === undefined ? Math.random : mulberry32(seed);
+
   const app = express();
   app.use(express.json());
   app.use(cors());
@@ -133,18 +165,58 @@ export function createServer() {
     res.json({ status: "ok" });
   });
 
+  // Discovery is unauthenticated by design (the spec: a client must be able
+  // to find the services); every POST under /cds-services is guarded when
+  // auth is configured.
   app.get("/cds-services", (_req: Request, res: Response) => {
     res.json(discoveryManifest());
   });
 
-  app.post("/cds-services/patient-view", (req: Request, res: Response) => {
+  if (cdsAuth) {
+    const guard = createCdsAuthMiddleware(cdsAuth);
+    app.use("/cds-services", (req: Request, res: Response, next: NextFunction) =>
+      req.method === "POST" ? guard(req, res, next) : next(),
+    );
+  }
+
+  // A service's endpoint is /cds-services/{service.id} (CDS Hooks spec); the
+  // hook-name paths are kept as aliases for existing callers.
+  app.post(["/cds-services/patient-view", `/cds-services/${PATIENT_VIEW_SERVICE_ID}`], (req: Request, res: Response) => {
     const request = req.body as PatientViewRequest;
     res.json(handlePatientView(request));
   });
 
-  app.post("/cds-services/order-select", (req: Request, res: Response) => {
+  app.post(["/cds-services/order-select", `/cds-services/${ORDER_SELECT_SERVICE_ID}`], (req: Request, res: Response) => {
     const request = req.body as OrderSelectRequest;
     res.json(handleOrderSelect(request));
+  });
+
+  // Feedback (accepted / overridden), CDS Hooks spec: {baseUrl}/cds-services/{service.id}/feedback.
+  const serviceIds = new Set<string>([
+    ...discoveryManifest().services.map((s) => s.id),
+    "patient-view",
+    "order-select",
+  ]);
+  app.post("/cds-services/:serviceId/feedback", (req: Request, res: Response) => {
+    const serviceId = String(req.params.serviceId);
+    if (!serviceIds.has(serviceId)) {
+      res.status(404).json({ error: `Unknown service '${serviceId}'` });
+      return;
+    }
+    const result = recordFeedback(serviceId, req.body);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.status(200).json({ recorded: result.recorded });
+  });
+
+  // Aggregate counts only (no identifiers): the override rate is the
+  // alert-fatigue / false-alarm signal a deployment must watch. Outside the
+  // /demo prefix on purpose -- this is a monitoring surface, not a demo
+  // control; protect it at the network layer in any real deployment.
+  app.get("/monitoring/feedback", (_req: Request, res: Response) => {
+    res.json(feedbackSummary());
   });
 
   // --- Demo-only scaffolding: real backend state a demo frontend can
@@ -153,6 +225,12 @@ export function createServer() {
   // un-prefixed /demo/* paths for backward compatibility, every other
   // river is under /demo/<id>/*. The dashboard builds its river switcher,
   // Europe map and disclosure panel from /demo/catchments. ---
+
+  if (!demoRoutes) {
+    app.use("/demo", (_req: Request, res: Response) => {
+      res.status(404).json({ error: "demo routes are disabled (OAH_DEMO_ROUTES=off)" });
+    });
+  }
 
   app.get("/demo/catchments", (_req: Request, res: Response) => {
     res.json({
@@ -190,7 +268,7 @@ export function createServer() {
   });
 
   app.post("/demo/telemetry/tick", (_req: Request, res: Response) => {
-    const stations = advanceAllStations();
+    const stations = advanceAllStations(telemetryRng);
     res.json({ stations });
   });
 

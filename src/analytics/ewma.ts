@@ -19,10 +19,15 @@
  * Time-varying control limits (exact, not the common asymptotic
  * approximation): the variance of z_t under the in-control distribution is
  *   Var(z_t) = sigma0^2 * (lambda / (2 - lambda)) * (1 - (1 - lambda)^(2t))
- * so the width shrinks from the raw process's own spread at t=1 up to its
- * asymptotic value as t grows -- using the fixed asymptotic limit from the
- * first sample would under-count how noisy an early z_t still is and risk
- * false alarms right after startup.
+ * which GROWS with t: the half-width is L*lambda*sigma0 at t=1 (the chart
+ * has only seen one sample, so z_1 is still mostly the target) and rises
+ * toward the asymptote L*sigma0*sqrt(lambda/(2-lambda)). The exact limits
+ * are therefore TIGHTER than the asymptotic ones early on: they keep the
+ * per-tick false-alarm probability constant from the first sample, at the
+ * price of a slightly higher false-alarm rate just after a (re)start than
+ * the asymptotic limit would give -- quantified in EVALUATION.md.
+ * (An earlier version of this comment described the width as shrinking;
+ * that was backwards, and test/ewma.test.ts now pins the real behaviour.)
  */
 
 export interface EwmaParams {

@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { ALL_STATIONS, catchmentOfStation } from "../data/catchments.js";
 import { haversineKm, nearestStation, type StationPosition } from "../hydrology/propagation.js";
+import { bandFactor, travelTimeBand } from "../hydrology/uncertainty.js";
 import { engineFor } from "./catchmentEngines.js";
 import type { ConfirmationSource } from "./exposureEngine.js";
+import { overrideReasons } from "./feedback.js";
 import { extractPatientAddress } from "./geolocation.js";
 import type { Card, CdsHookResponse, PatientViewRequest } from "./types.js";
 
@@ -68,42 +70,77 @@ export function handlePatientView(request: PatientViewRequest): CdsHookResponse 
 
   if (evaluation.isOwnFlag || evaluation.phase === "confirmed") {
     const source = catchment.stations.find((s) => s.id === evaluation.sourceStationId)!;
+    // Provenance of the flag driving this card: this station's own, or the
+    // upstream source it traces back to.
+    const via = evaluation.isOwnFlag
+      ? evaluation.confirmedVia
+      : engine.getStationState(evaluation.sourceStationId).confirmedVia;
+    // SAFETY CONTROL (SAFETY_CASE.md H2): a flag inferred from a statistical
+    // turbidity signal alone is NOT a confirmed exposure. It is presented at
+    // 'warning' (not 'critical'), labelled unconfirmed, carries no
+    // "do not delay empiric therapy" directive and no order-creating
+    // suggestion -- acting on an unconfirmed alarm is exactly the
+    // over-treatment antimicrobial stewardship exists to prevent, and the
+    // detector's false-alarm rate (EVALUATION.md) is only as good as its
+    // baseline assumptions.
+    const inferred = via === "statistical-detection";
+    // The proposed ServiceRequest must carry a subject (FHIR R4 ServiceRequest.subject
+    // is 1..1 -- the official validator rejected the first version without one).
+    // Taken from the hook context (required by CDS Hooks), falling back to the
+    // prefetched Patient's id; with neither, no order is proposed at all rather
+    // than an invalid one.
+    const patientId = request.context?.patientId ?? (patient as { id?: string } | undefined)?.id;
+    const lead = evaluation.isOwnFlag
+      ? `${station.name} ${describeFlag(via)}`
+      : `${station.name} is within the modeled downstream arrival window from ${source.name}` +
+        (inferred ? `, whose flag ${describeFlag(via)}` : "");
+    const closing = inferred
+      ? `This has NOT been confirmed by water-authority sampling and is not a diagnosis; use clinical judgement on ` +
+        `whether waterborne exposure is relevant, per ${protocol}.`
+      : `Consider empiric waterborne-exposure workup per ${protocol}; ` +
+        "do not delay empiric therapy awaiting confirmatory testing.";
     const card: Card = {
       uuid: randomUUID(),
-      summary: "Active waterborne biohazard exposure window for this address",
-      indicator: "critical",
+      summary: inferred
+        ? "Possible waterborne exposure window for this address (unconfirmed signal)"
+        : "Active waterborne biohazard exposure window for this address",
+      indicator: inferred ? "warning" : "critical",
       detail:
-        `${station.name} ${evaluation.isOwnFlag ? describeFlag(evaluation.confirmedVia) : "is within the modeled downstream arrival window from " + source.name} ` +
-        `(elapsed ~${evaluation.elapsedMinutes.toFixed(0)} min). Indicative WFD ecological status: ${evaluation.wfd.eqrClass} ` +
-        `(EQR ${evaluation.wfd.indicativeEqr}). Consider empiric waterborne-exposure workup per ${protocol}; ` +
-        "do not delay empiric therapy awaiting confirmatory testing.",
+        `${lead} (elapsed ~${evaluation.elapsedMinutes.toFixed(0)} min). Indicative WFD ecological status: ` +
+        `${evaluation.wfd.eqrClass} (EQR ${evaluation.wfd.indicativeEqr}). ${closing}`,
       source: { label: `${sourceLabel} (deterministic exposure-window rule)` },
-      suggestions: [
-        {
-          label: "Gastrointestinal pathogens DNA/RNA panel (stool NAA) -- LOINC 82195-9",
-          uuid: randomUUID(),
-          actions: [
-            {
-              type: "create",
-              description:
-                "Order a stool-based multiplex GI pathogen NAA panel to identify the causative organism and " +
-                "support antimicrobial de-escalation once results return (antimicrobial stewardship).",
-              resource: {
-                resourceType: "ServiceRequest",
-                status: "draft",
-                intent: "order",
-                code: { coding: [GI_PATHOGEN_PCR_PANEL] },
+      suggestions:
+        inferred || !patientId
+          ? []
+          : [
+              {
+                label: "Gastrointestinal pathogens DNA/RNA panel (stool NAA) -- LOINC 82195-9",
+                uuid: randomUUID(),
+                actions: [
+                  {
+                    type: "create",
+                    description:
+                      "Order a stool-based multiplex GI pathogen NAA panel to identify the causative organism and " +
+                      "support antimicrobial de-escalation once results return (antimicrobial stewardship).",
+                    resource: {
+                      resourceType: "ServiceRequest",
+                      status: "draft",
+                      intent: "order",
+                      code: { coding: [GI_PATHOGEN_PCR_PANEL] },
+                      subject: { reference: `Patient/${patientId}` },
+                    },
+                  },
+                ],
               },
-            },
-          ],
-        },
-      ],
+            ],
+      overrideReasons: overrideReasons(),
     };
     return { cards: [card] };
   }
 
   // phase === "predicted": a downstream forecast, not yet arrived.
   const forecast = evaluation.forecast!;
+  const band = travelTimeBand(forecast.peakTimeMinutes);
   const sourceStation = catchment.stations.find((s) => s.id === evaluation.sourceStationId)!;
   const card: Card = {
     uuid: randomUUID(),
@@ -114,13 +151,16 @@ export function handlePatientView(request: PatientViewRequest): CdsHookResponse 
       `model (Taylor-dispersion approximation; ${forecast.distanceKm.toFixed(2)} km straight-line at an assumed ${catchment.meanVelocityMs} m/s mean ` +
       `velocity -- illustrative, not a calibrated gauge reading) predicts the contamination front will reach ` +
       `${station.name} in an estimated ${forecast.arrivalTimeMinutes.toFixed(0)}-${forecast.clearanceTimeMinutes.toFixed(0)} ` +
-      `minutes (peak ~${forecast.peakTimeMinutes.toFixed(0)} min); modeled chance the front has ALREADY reached this ` +
+      `minutes (peak ~${forecast.peakTimeMinutes.toFixed(0)} min, but if the assumed velocity is off by a factor of ` +
+      `about ${bandFactor().toFixed(0)} either way the peak could fall anywhere from ${band.lowMinutes.toFixed(0)} to ` +
+      `${band.highMinutes.toFixed(0)} min -- a sensitivity range, not a calibrated interval); modeled chance the front has ALREADY reached this ` +
       `station: ${Math.round(evaluation.probability * 100)}% (this starts near 0% and rises as the window approaches -- ` +
       `it is not the chance the contamination reaches you at all). Indicative WFD ecological status if unmitigated: ${evaluation.wfd.eqrClass} ` +
       `(${evaluation.wfd.note}). No local confirmation yet -- this is a precautionary early-warning, not a confirmed ` +
       "exposure.",
     source: { label: `${sourceLabel} (downstream propagation forecast, deterministic)` },
     suggestions: [],
+    overrideReasons: overrideReasons(),
   };
   return { cards: [card] };
 }

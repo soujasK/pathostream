@@ -33,9 +33,19 @@ export interface RiskAssessmentPrediction {
   rationale?: string;
 }
 
+/** FHIR `Narrative`: a human-readable XHTML rendering of the resource.
+ * Not required by the base resource, but the HL7 validator flags its
+ * absence (dom-6, best practice) and an EHR that cannot render a
+ * RiskAssessment's structured fields can still show this. */
+export interface Narrative {
+  status: "generated";
+  div: string;
+}
+
 export interface RiskAssessment {
   resourceType: "RiskAssessment";
   id: string;
+  text?: Narrative;
   status: "registered" | "preliminary" | "final" | "amended";
   subject: Reference;
   occurrenceDateTime: string;

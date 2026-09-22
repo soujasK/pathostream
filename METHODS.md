@@ -393,9 +393,11 @@ that same `flagged` state.
   (Mondego only) CDS Hooks card. Design decisions worth stating plainly:
   - *Debounce, not a hair trigger.* One out-of-control tick never
     escalates; the EWMA's 3-sigma limits rarely but not never false-alarm
-    (`test/ewma.test.ts` asserts fewer than 5 over 300 in-control ticks --
-    a loose bound, not a measured rate), and across 10 stations on a ~1.2s
-    clock a lone blip will occasionally occur. The Incident Timeline
+    (`test/ewma.test.ts` asserts fewer than 5 over 300 in-control ticks as
+    a smoke check; `EVALUATION.md` §1 gives the actual measured rate: an
+    in-control run averages ~496 readings between false alarms, matching
+    an independent Markov-chain calculation), and across 33 stations on a
+    ~1.2s clock a lone blip will occasionally occur. The Incident Timeline
     narrates those as "returned to normal before the escalation threshold
     -- correctly not escalated."
   - *Idempotent and non-clobbering.* Escalation happens once per event and
@@ -411,12 +413,18 @@ that same `flagged` state.
     (an inferred early-warning signal, not a direct pathogen or biohazard
     measurement)" and never claims a direct biohazard signature
     (`test/cdsHooks.test.ts`, "card provenance wording").
-  - *Not calibrated.* The 5-tick run length and the fixed 0.7 severity
-    given to an auto-escalation (vs. 0.9 for an operator report) are
-    illustrative, documented choices. The scheme's false-alarm and
-    detection-delay behaviour is not characterized as a formal average run
-    length (ARL), which a real deployment would need to set the run length
-    against an acceptable false-alert rate.
+  - *Characterized by simulation, not calibrated to real data.* The 5-tick
+    run length is not a guess: `EVALUATION.md` derives it by simulation as
+    the smallest persistence value meeting an explicit, stated
+    false-escalation design target, cross-checked against an independent
+    Markov-chain calculation, and shows how far that guarantee degrades
+    (up to three orders of magnitude) if the real noise turns out larger
+    or autocorrelated relative to the assumption. The fixed 0.7 severity
+    given to an auto-escalation (vs. 0.9 for an operator report) remains an
+    illustrative, documented choice. None of this is calibrated against any
+    real river's telemetry, which is why a downstream card built from an
+    auto-escalated flag is shown to a clinician as unconfirmed rather than
+    as a confirmed exposure (`SAFETY_CASE.md` hazard H2).
   - *A policy decision, not just a code rule.* Letting a purely
     statistical signal reach a clinician with no human confirmation raises
     alert-fatigue and regulatory-classification questions (§9) that this

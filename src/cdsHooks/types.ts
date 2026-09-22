@@ -13,6 +13,8 @@
  * real deployment.
  */
 
+import type { OverrideReasonCoding } from "./feedback.js";
+
 export interface CdsServiceDescriptor {
   hook: "patient-view" | "order-select";
   title: string;
@@ -86,6 +88,10 @@ export interface Card {
   detail: string;
   source: CardSource;
   suggestions: Suggestion[];
+  /** Coded reasons a clinician can pick when overriding the card (CDS Hooks
+   * 2.0; each Coding MUST carry a `display`). Reported back through the
+   * feedback endpoint (feedback.ts). */
+  overrideReasons?: OverrideReasonCoding[];
 }
 
 export interface CdsHookResponse {

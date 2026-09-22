@@ -15,6 +15,7 @@
 
 import type { NetworkStation } from "../data/mondegoNetwork.js";
 import type { TransportForecast } from "../hydrology/advectionDispersion.js";
+import { bandFactor, travelTimeBand } from "../hydrology/uncertainty.js";
 import type { WfdClassification } from "../hydrology/wfdClassification.js";
 import type { CodeableConcept, Coding, Period, Reference, RiskAssessment } from "./types.js";
 
@@ -30,6 +31,11 @@ const LEPTOSPIROSIS_CODING: Coding = {
   code: "77377001",
   display: "Leptospirosis (disorder)",
 };
+
+/** Escapes text for inclusion in the XHTML narrative div. */
+function escapeXml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 
 function qualitativeRiskCode(probability: number): "high" | "moderate" | "low" {
   if (probability >= 0.7) return "high";
@@ -83,6 +89,7 @@ export function buildForecastRiskAssessment(input: RiskAssessmentInput): RiskAss
   const clearance = new Date(now.getTime() + forecast.clearanceTimeMinutes * 60_000);
   const whenPeriod: Period = { start: arrival.toISOString(), end: clearance.toISOString() };
 
+  const band = travelTimeBand(forecast.peakTimeMinutes);
   const rationale =
     `1D advection-dispersion (Taylor-dispersion / Fischer et al. approximation) transport model: peak arrival ` +
     `~${forecast.peakTimeMinutes.toFixed(1)} min, arrival window ${forecast.arrivalTimeMinutes.toFixed(1)}-` +
@@ -91,11 +98,21 @@ export function buildForecastRiskAssessment(input: RiskAssessmentInput): RiskAss
     `coefficient -- both illustrative, NOT calibrated to a real gauge reading. Indicative WFD ` +
     `ecological status if this arrives unmitigated: ${wfd.eqrClass} (EQR ${wfd.indicativeEqr}, ${wfd.note}). ` +
     `Read probabilityDecimal together with whenPeriod: it is the modeled chance the front has already arrived at ` +
-    `the time of this assessment (near 0 at first, rising through the window), not the chance it arrives at all.`;
+    `the time of this assessment (near 0 at first, rising through the window), not the chance it arrives at all. ` +
+    `Sensitivity: if the assumed velocity is off by a factor of about ${bandFactor().toFixed(0)} either way, the ` +
+    `peak could fall anywhere from ${band.lowMinutes.toFixed(1)} to ${band.highMinutes.toFixed(1)} min ` +
+    `(an assumed sensitivity range, not a calibrated interval).`;
+
+  const pct = Math.round(probability * 100);
+  const narrative =
+    `<div xmlns="http://www.w3.org/1999/xhtml"><p>${escapeXml(outcome.text ?? "")}</p>` +
+    `<p>Preliminary model output. Modeled chance the front has already arrived: ${pct}%. ` +
+    `Not a diagnosis; velocity and dispersion are illustrative, not calibrated.</p></div>`;
 
   return {
     resourceType: "RiskAssessment",
     id: `forecast-risk-${source.id}-${target.id}`,
+    text: { status: "generated", div: narrative },
     status: "preliminary",
     subject,
     occurrenceDateTime: now.toISOString(),

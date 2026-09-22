@@ -94,6 +94,9 @@ export interface NetworkForecast {
   sourceStationId: string
   targetStationId: string
   transport: TransportForecast
+  /** Sensitivity of the peak ETA to the placeholder velocity -- an assumed
+   * range, not a calibrated prediction interval (src/hydrology/uncertainty.ts). */
+  peakBand: { lowMinutes: number; highMinutes: number; velocityLogSd: number }
 }
 
 export interface DemoForecastsResponse {

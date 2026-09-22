@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { computeTransportForecast } from "../src/hydrology/advectionDispersion.js";
 import { classifyWfdEcologicalStatus } from "../src/hydrology/wfdClassification.js";
+import { collectionBundle, nameBasedUuid } from "../src/fhir/bundle.js";
 import { buildForecastRiskAssessment } from "../src/fhir/riskAssessment.js";
 import { MONDEGO_STATIONS } from "../src/data/mondegoNetwork.js";
 
@@ -63,5 +64,52 @@ describe("buildForecastRiskAssessment", () => {
     const resource = buildForecastRiskAssessment(buildInput());
     const roundTripped = JSON.parse(JSON.stringify(resource));
     expect(roundTripped).toEqual(resource);
+  });
+
+  // Mirrors a finding of the official HL7 validator (dom-6: a resource should have narrative).
+  it("carries a generated XHTML narrative that states it is preliminary and not a diagnosis", () => {
+    const { text } = buildForecastRiskAssessment(buildInput());
+    expect(text?.status).toBe("generated");
+    expect(text?.div.startsWith('<div xmlns="http://www.w3.org/1999/xhtml">')).toBe(true);
+    expect(text?.div.endsWith("</div>")).toBe(true);
+    expect(text?.div).toContain("Preliminary model output");
+    expect(text?.div).toContain("Not a diagnosis");
+    expect(text?.div).toContain("65%");
+  });
+
+  it("escapes markup characters in the narrative so it stays well-formed XHTML", () => {
+    const hostile = { ...target, name: `Rio <b>"A&B"</b>` };
+    const { text } = buildForecastRiskAssessment(buildInput({ target: hostile }));
+    expect(text?.div).not.toContain("<b>");
+    expect(text?.div).toContain("Rio &lt;b&gt;&quot;A&amp;B&quot;&lt;/b&gt;");
+  });
+});
+
+describe("collectionBundle (FHIR R4 collection Bundle)", () => {
+  const resources = [
+    buildForecastRiskAssessment(buildInput()),
+    buildForecastRiskAssessment(buildInput({ target: MONDEGO_STATIONS[3]! })),
+  ];
+
+  // Mirrors the validator's "Bundle entry missing fullUrl" errors (20 of them on the first version).
+  it("gives every entry a urn:uuid fullUrl", () => {
+    const bundle = collectionBundle(resources);
+    expect(bundle.resourceType).toBe("Bundle");
+    expect(bundle.type).toBe("collection");
+    for (const entry of bundle.entry) {
+      expect(entry.fullUrl).toMatch(/^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    }
+  });
+
+  it("is deterministic per resource and distinct across resources", () => {
+    const a = collectionBundle(resources).entry.map((e) => e.fullUrl);
+    const b = collectionBundle(resources).entry.map((e) => e.fullUrl);
+    expect(a).toEqual(b);
+    expect(new Set(a).size).toBe(resources.length);
+  });
+
+  it("nameBasedUuid reproduces independent RFC 4122 v5 known answers (Python's uuid.uuid5)", () => {
+    expect(nameBasedUuid("python.org", "6ba7b8109dad11d180b400c04fd430c8")).toBe("886313e1-3b8a-5372-9b90-0c9aee199e5d");
+    expect(nameBasedUuid("RiskAssessment/x")).toBe("71d07d2b-9e0a-5720-a02a-4c59e3509d2d");
   });
 });

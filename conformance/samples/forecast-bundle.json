@@ -1,0 +1,261 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:5667f08f-c343-5184-84c2-06c8e4b2196c",
+      "resource": {
+        "resourceType": "RiskAssessment",
+        "id": "forecast-risk-PT-SANTA-CLARA-PT-MANUEL-BRAGA",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Predicted waterborne biohazard arrival at Parque Dr. Manuel Braga, propagated downstream from Ponte de Santa Clara (0.24 km along the declared flow order).</p><p>Preliminary model output. Modeled chance the front has already arrived: 1%. Not a diagnosis; velocity and dispersion are illustrative, not calibrated.</p></div>"
+        },
+        "status": "preliminary",
+        "subject": {
+          "reference": "Location/PT-MANUEL-BRAGA",
+          "display": "Parque Dr. Manuel Braga"
+        },
+        "occurrenceDateTime": "2026-09-21T17:18:21.425Z",
+        "basis": [
+          {
+            "reference": "Location/PT-SANTA-CLARA",
+            "display": "Ponte de Santa Clara"
+          }
+        ],
+        "prediction": [
+          {
+            "outcome": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "77377001",
+                  "display": "Leptospirosis (disorder)"
+                }
+              ],
+              "text": "Predicted waterborne biohazard arrival at Parque Dr. Manuel Braga, propagated downstream from Ponte de Santa Clara (0.24 km along the declared flow order)."
+            },
+            "qualitativeRisk": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/risk-probability",
+                  "code": "low"
+                }
+              ]
+            },
+            "probabilityDecimal": 0.01,
+            "whenPeriod": {
+              "start": "2026-09-21T17:21:37.871Z",
+              "end": "2026-09-21T17:37:23.603Z"
+            },
+            "rationale": "1D advection-dispersion (Taylor-dispersion / Fischer et al. approximation) transport model: peak arrival ~11.2 min, arrival window 3.3-19.0 min, over 0.24 km at an assumed 0.36 m/s mean velocity and 8 m^2/s dispersion coefficient -- both illustrative, NOT calibrated to a real gauge reading. Indicative WFD ecological status if this arrives unmitigated: Bad (EQR 0.1, Illustrative proxy mapping onto the real WFD 5-class EQR system -- NOT an official, type-specific, intercalibrated national assessment.). Read probabilityDecimal together with whenPeriod: it is the modeled chance the front has already arrived at the time of this assessment (near 0 at first, rising through the window), not the chance it arrives at all."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:13b8f691-febd-5190-9724-f42e525bcad5",
+      "resource": {
+        "resourceType": "RiskAssessment",
+        "id": "forecast-risk-PT-SANTA-CLARA-PT-PARQUE-VERDE",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Predicted waterborne biohazard arrival at Parque Verde do Mondego, propagated downstream from Ponte de Santa Clara (0.31 km along the declared flow order).</p><p>Preliminary model output. Modeled chance the front has already arrived: 0%. Not a diagnosis; velocity and dispersion are illustrative, not calibrated.</p></div>"
+        },
+        "status": "preliminary",
+        "subject": {
+          "reference": "Location/PT-PARQUE-VERDE",
+          "display": "Parque Verde do Mondego"
+        },
+        "occurrenceDateTime": "2026-09-21T17:18:21.425Z",
+        "basis": [
+          {
+            "reference": "Location/PT-SANTA-CLARA",
+            "display": "Ponte de Santa Clara"
+          }
+        ],
+        "prediction": [
+          {
+            "outcome": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "77377001",
+                  "display": "Leptospirosis (disorder)"
+                }
+              ],
+              "text": "Predicted waterborne biohazard arrival at Parque Verde do Mondego, propagated downstream from Ponte de Santa Clara (0.31 km along the declared flow order)."
+            },
+            "qualitativeRisk": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/risk-probability",
+                  "code": "low"
+                }
+              ]
+            },
+            "probabilityDecimal": 0,
+            "whenPeriod": {
+              "start": "2026-09-21T17:23:47.922Z",
+              "end": "2026-09-21T17:41:42.209Z"
+            },
+            "rationale": "1D advection-dispersion (Taylor-dispersion / Fischer et al. approximation) transport model: peak arrival ~14.4 min, arrival window 5.4-23.3 min, over 0.31 km at an assumed 0.36 m/s mean velocity and 8 m^2/s dispersion coefficient -- both illustrative, NOT calibrated to a real gauge reading. Indicative WFD ecological status if this arrives unmitigated: Bad (EQR 0.1, Illustrative proxy mapping onto the real WFD 5-class EQR system -- NOT an official, type-specific, intercalibrated national assessment.). Read probabilityDecimal together with whenPeriod: it is the modeled chance the front has already arrived at the time of this assessment (near 0 at first, rising through the window), not the chance it arrives at all."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:25c1d7be-d098-5884-86ee-e848e97b04e9",
+      "resource": {
+        "resourceType": "RiskAssessment",
+        "id": "forecast-risk-PT-SANTA-CLARA-PT-CHOUPALINHO",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Predicted waterborne biohazard arrival at Parque Choupalinho, propagated downstream from Ponte de Santa Clara (0.52 km along the declared flow order).</p><p>Preliminary model output. Modeled chance the front has already arrived: 0%. Not a diagnosis; velocity and dispersion are illustrative, not calibrated.</p></div>"
+        },
+        "status": "preliminary",
+        "subject": {
+          "reference": "Location/PT-CHOUPALINHO",
+          "display": "Parque Choupalinho"
+        },
+        "occurrenceDateTime": "2026-09-21T17:18:21.425Z",
+        "basis": [
+          {
+            "reference": "Location/PT-SANTA-CLARA",
+            "display": "Ponte de Santa Clara"
+          }
+        ],
+        "prediction": [
+          {
+            "outcome": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "77377001",
+                  "display": "Leptospirosis (disorder)"
+                }
+              ],
+              "text": "Predicted waterborne biohazard arrival at Parque Choupalinho, propagated downstream from Ponte de Santa Clara (0.52 km along the declared flow order)."
+            },
+            "qualitativeRisk": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/risk-probability",
+                  "code": "low"
+                }
+              ]
+            },
+            "probabilityDecimal": 0,
+            "whenPeriod": {
+              "start": "2026-09-21T17:31:00.466Z",
+              "end": "2026-09-21T17:54:15.638Z"
+            },
+            "rationale": "1D advection-dispersion (Taylor-dispersion / Fischer et al. approximation) transport model: peak arrival ~24.3 min, arrival window 12.7-35.9 min, over 0.52 km at an assumed 0.36 m/s mean velocity and 8 m^2/s dispersion coefficient -- both illustrative, NOT calibrated to a real gauge reading. Indicative WFD ecological status if this arrives unmitigated: Bad (EQR 0.1, Illustrative proxy mapping onto the real WFD 5-class EQR system -- NOT an official, type-specific, intercalibrated national assessment.). Read probabilityDecimal together with whenPeriod: it is the modeled chance the front has already arrived at the time of this assessment (near 0 at first, rising through the window), not the chance it arrives at all."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:66a11b55-dc70-502c-a599-a32b7f104067",
+      "resource": {
+        "resourceType": "RiskAssessment",
+        "id": "forecast-risk-PT-SANTA-CLARA-PT-ACUDE-PONTE",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Predicted waterborne biohazard arrival at Açude-Ponte, propagated downstream from Ponte de Santa Clara (2.01 km along the declared flow order).</p><p>Preliminary model output. Modeled chance the front has already arrived: 0%. Not a diagnosis; velocity and dispersion are illustrative, not calibrated.</p></div>"
+        },
+        "status": "preliminary",
+        "subject": {
+          "reference": "Location/PT-ACUDE-PONTE",
+          "display": "Açude-Ponte"
+        },
+        "occurrenceDateTime": "2026-09-21T17:18:21.425Z",
+        "basis": [
+          {
+            "reference": "Location/PT-SANTA-CLARA",
+            "display": "Ponte de Santa Clara"
+          }
+        ],
+        "prediction": [
+          {
+            "outcome": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "77377001",
+                  "display": "Leptospirosis (disorder)"
+                }
+              ],
+              "text": "Predicted waterborne biohazard arrival at Açude-Ponte, propagated downstream from Ponte de Santa Clara (2.01 km along the declared flow order)."
+            },
+            "qualitativeRisk": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/risk-probability",
+                  "code": "low"
+                }
+              ]
+            },
+            "probabilityDecimal": 0,
+            "whenPeriod": {
+              "start": "2026-09-21T18:28:36.526Z",
+              "end": "2026-09-21T19:14:07.327Z"
+            },
+            "rationale": "1D advection-dispersion (Taylor-dispersion / Fischer et al. approximation) transport model: peak arrival ~93.0 min, arrival window 70.3-115.8 min, over 2.01 km at an assumed 0.36 m/s mean velocity and 8 m^2/s dispersion coefficient -- both illustrative, NOT calibrated to a real gauge reading. Indicative WFD ecological status if this arrives unmitigated: Bad (EQR 0.1, Illustrative proxy mapping onto the real WFD 5-class EQR system -- NOT an official, type-specific, intercalibrated national assessment.). Read probabilityDecimal together with whenPeriod: it is the modeled chance the front has already arrived at the time of this assessment (near 0 at first, rising through the window), not the chance it arrives at all."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:51c0cb18-3ff1-58d1-90c0-fae919b0f9ba",
+      "resource": {
+        "resourceType": "RiskAssessment",
+        "id": "forecast-risk-PT-SANTA-CLARA-PT-CHOUPAL",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Predicted waterborne biohazard arrival at Mata Nacional do Choupal, propagated downstream from Ponte de Santa Clara (2.90 km along the declared flow order).</p><p>Preliminary model output. Modeled chance the front has already arrived: 0%. Not a diagnosis; velocity and dispersion are illustrative, not calibrated.</p></div>"
+        },
+        "status": "preliminary",
+        "subject": {
+          "reference": "Location/PT-CHOUPAL",
+          "display": "Mata Nacional do Choupal"
+        },
+        "occurrenceDateTime": "2026-09-21T17:18:21.425Z",
+        "basis": [
+          {
+            "reference": "Location/PT-SANTA-CLARA",
+            "display": "Ponte de Santa Clara"
+          }
+        ],
+        "prediction": [
+          {
+            "outcome": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "77377001",
+                  "display": "Leptospirosis (disorder)"
+                }
+              ],
+              "text": "Predicted waterborne biohazard arrival at Mata Nacional do Choupal, propagated downstream from Ponte de Santa Clara (2.90 km along the declared flow order)."
+            },
+            "qualitativeRisk": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/risk-probability",
+                  "code": "low"
+                }
+              ]
+            },
+            "probabilityDecimal": 0,
+            "whenPeriod": {
+              "start": "2026-09-21T19:05:09.944Z",
+              "end": "2026-09-21T19:59:49.419Z"
+            },
+            "rationale": "1D advection-dispersion (Taylor-dispersion / Fischer et al. approximation) transport model: peak arrival ~134.1 min, arrival window 106.8-161.5 min, over 2.90 km at an assumed 0.36 m/s mean velocity and 8 m^2/s dispersion coefficient -- both illustrative, NOT calibrated to a real gauge reading. Indicative WFD ecological status if this arrives unmitigated: Bad (EQR 0.1, Illustrative proxy mapping onto the real WFD 5-class EQR system -- NOT an official, type-specific, intercalibrated national assessment.). Read probabilityDecimal together with whenPeriod: it is the modeled chance the front has already arrived at the time of this assessment (near 0 at first, rising through the window), not the chance it arrives at all."
+          }
+        ]
+      }
+    }
+  ]
+}

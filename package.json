@@ -9,7 +9,10 @@
     "start": "tsx src/cdsHooks/server.ts",
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "evaluate": "tsx scripts/evaluate.ts && tsx scripts/renderEvaluation.ts",
+    "safety-case": "tsx scripts/renderSafetyCase.ts",
+    "conformance:samples": "tsx scripts/exportFhirSamples.ts"
   },
   "dependencies": {
     "cors": "^2.8.6",

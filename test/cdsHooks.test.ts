@@ -179,6 +179,67 @@ describe("POST /cds-services/patient-view", () => {
       expect(detail).not.toContain("currently shows an active biohazard signature");
     });
 
+    describe("SAFETY: an inferred (statistical) flag is never presented as a confirmed exposure", () => {
+      const cardFor = async (station = TARGET) => {
+        const res = await request(app).post("/cds-services/patient-view").send(patientViewRequest(station.latitude, station.longitude));
+        return res.body.cards[0] as { summary: string; indicator: string; detail: string; suggestions: unknown[] };
+      };
+
+      it("downgrades an auto-escalated station's own card to 'warning', labelled unconfirmed", async () => {
+        setStationState(TARGET.id, true, 0.7, new Date(), "statistical-detection");
+        const card = await cardFor();
+        expect(card.indicator).toBe("warning");
+        expect(card.summary).toContain("unconfirmed");
+        expect(card.detail).toContain("NOT been confirmed");
+      });
+
+      it("drops the empiric-therapy directive and the order-creating suggestion for an inferred flag", async () => {
+        setStationState(TARGET.id, true, 0.7, new Date(), "statistical-detection");
+        const card = await cardFor();
+        expect(card.detail).not.toMatch(/empiric therapy/i);
+        expect(card.suggestions).toEqual([]);
+      });
+
+      it("discloses the inferred trigger on a downstream patient's card once the front has arrived", async () => {
+        // Source flagged long enough ago that TARGET is inside its arrival window.
+        setStationState(SOURCE.id, true, 0.7, new Date(Date.now() - 20 * 60_000), "statistical-detection");
+        expect((await evaluationFor(TARGET.id))?.phase).toBe("confirmed");
+        const card = await cardFor();
+        expect(card.indicator).toBe("warning");
+        expect(card.detail).toContain(`from ${SOURCE.name}, whose flag was auto-escalated`);
+        expect(card.detail).toContain("NOT been confirmed");
+      });
+
+      // Mirrors the official validator's "ServiceRequest.subject: minimum required = 1" error.
+      it("gives the proposed ServiceRequest a subject taken from the hook context", async () => {
+        setStationState(TARGET.id, true, 0.9, new Date(), "operator");
+        const card = (await cardFor()) as unknown as {
+          suggestions: { actions: { resource: { resourceType: string; subject?: { reference: string } } }[] }[];
+        };
+        const resource = card.suggestions[0]!.actions[0]!.resource;
+        expect(resource.resourceType).toBe("ServiceRequest");
+        expect(resource.subject).toEqual({ reference: "Patient/demo-patient" });
+      });
+
+      it("proposes no order at all (rather than an invalid one) when no patient id is available", async () => {
+        setStationState(TARGET.id, true, 0.9, new Date(), "operator");
+        const body = patientViewRequest(TARGET.latitude, TARGET.longitude) as unknown as Record<string, unknown>;
+        (body.context as Record<string, unknown>).patientId = undefined;
+        delete (body.prefetch as { patient: Record<string, unknown> }).patient.id;
+        const res = await request(app).post("/cds-services/patient-view").send(body);
+        expect(res.body.cards[0].indicator).toBe("critical");
+        expect(res.body.cards[0].suggestions).toEqual([]);
+      });
+
+      it("keeps the full-strength critical card for an operator-confirmed flag (unchanged)", async () => {
+        setStationState(TARGET.id, true, 0.9, new Date(), "operator");
+        const card = await cardFor();
+        expect(card.indicator).toBe("critical");
+        expect(card.detail).toContain("do not delay empiric therapy");
+        expect(card.suggestions).toHaveLength(1);
+      });
+    });
+
     it("carries the same honesty into the downstream (predicted) card for an auto-escalated source", async () => {
       setStationState(SOURCE.id, true, 0.7, new Date(), "statistical-detection");
       const res = await request(app).post("/cds-services/patient-view").send(patientViewRequest(TARGET.latitude, TARGET.longitude));
@@ -203,6 +264,7 @@ describe("GET /demo/forecasts and /demo/forecast-bundle", () => {
     expect(res.body.resourceType).toBe("Bundle");
     expect(res.body.entry).toHaveLength(5);
     for (const entry of res.body.entry) {
+      expect(entry.fullUrl).toMatch(/^urn:uuid:/);
       expect(entry.resource.resourceType).toBe("RiskAssessment");
       expect(entry.resource.prediction[0].probabilityDecimal).toBeGreaterThanOrEqual(0);
     }

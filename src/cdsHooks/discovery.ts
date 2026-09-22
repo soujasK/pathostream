@@ -1,11 +1,22 @@
 import type { CdsDiscoveryResponse } from "./types.js";
 
+/** Service ids advertised in discovery. Per the CDS Hooks spec a service's
+ * endpoint is `{baseUrl}/cds-services/{service.id}` (and its feedback
+ * endpoint `.../{service.id}/feedback`), so the server MUST answer on these
+ * paths. (An earlier version served only `/cds-services/patient-view` and
+ * `/cds-services/order-select`, i.e. it 404'd on the very ids it
+ * advertised; those hook-name paths remain as aliases.) The Mondego-flavoured
+ * ids are kept because an id is a stable identifier, not a description --
+ * the patient-view service itself covers every river. */
+export const PATIENT_VIEW_SERVICE_ID = "oah-mondego-biohazard-exposure";
+export const ORDER_SELECT_SERVICE_ID = "oah-mondego-stewardship-trigger";
+
 export function discoveryManifest(): CdsDiscoveryResponse {
   return {
     services: [
       {
         hook: "patient-view",
-        id: "oah-mondego-biohazard-exposure",
+        id: PATIENT_VIEW_SERVICE_ID,
         title: "OAH: downstream waterborne biohazard exposure forecast (any monitored river)",
         description:
           "Flags patients whose home address falls near any monitored river station (Mondego, Douro, Tagus, " +
@@ -15,7 +26,7 @@ export function discoveryManifest(): CdsDiscoveryResponse {
       },
       {
         hook: "order-select",
-        id: "oah-mondego-stewardship-trigger",
+        id: ORDER_SELECT_SERVICE_ID,
         title: "OAH-Mondego: waterborne-exposure antimicrobial stewardship trigger",
         description:
           "Suggests pairing empiric antimicrobial therapy with a pathogen-identifying stool NAA panel " +

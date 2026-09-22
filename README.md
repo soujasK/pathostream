@@ -1,5 +1,15 @@
 # OAH River Watch (prototype)
 
+**Companion documents:** [EVALUATION.md](EVALUATION.md) (is the detector any
+good, and how badly does it degrade) · [SAFETY_CASE.md](SAFETY_CASE.md)
+(intended use, EU MDR/AI Act self-assessment, hazard log) ·
+[MODEL_CARD.md](MODEL_CARD.md) (intended use, data, metrics, limits) ·
+[METHODS.md](METHODS.md) (equations, citations) ·
+[conformance/README.md](conformance/README.md) (official FHIR validator
+results). All four besides METHODS.md are generated from code (`npm run
+evaluate`, `npm run safety-case`) and test-checked against what actually
+ships.
+
 ## What is this? (the plain version)
 
 When heavy rain pushes sewage into a river, people downstream get sick --
@@ -163,14 +173,19 @@ inferred early-warning signal, not a direct pathogen or biohazard
 measurement)" rather than claiming a direct biohazard signature. An
 operator's report is the only thing described as an observed signature.
 
-**What this rule is and isn't.** 5 ticks and the 0.7 severity assigned to
-an auto-escalation are fixed, documented choices, not calibrated
-statistical properties -- the detector's false-alarm behaviour is only
-checked qualitatively (`test/ewma.test.ts`), not characterized as a formal
-average run length. And letting a statistical signal reach a clinician
-with no human in the loop is a real deployment *policy* decision (alert
-fatigue, regulatory classification), not merely a code rule; here it exists
-to demonstrate the interoperability chain end to end. See `METHODS.md` §8.
+**What this rule is and isn't.** 5 ticks is not a guess: it's the smallest
+persistence value whose simulated false-escalation rate meets an explicit,
+stated design target (derived by a seeded Monte Carlo / Markov-chain
+evaluation, cross-checked two independent ways) -- see **`EVALUATION.md`**
+for the full average-run-length characterization, including how far that
+guarantee collapses if the real data's noise or autocorrelation doesn't
+match the assumption (up to three orders of magnitude). Letting a
+statistical signal reach a clinician with no human in the loop is still a
+real deployment *policy* decision (alert fatigue, regulatory
+classification), not merely a code rule; here it exists to demonstrate the
+interoperability chain end to end, and an inferred signal is downgraded
+and labelled unconfirmed before it ever reaches a card (see
+`SAFETY_CASE.md` hazard H2). See `METHODS.md` §8.
 
 ## One consequence path for every river
 
@@ -241,7 +256,8 @@ seconds); an anomaly appears once it lasts 2 ticks, and escalates at 5.
 | OneAquaHealth is a real, active EUR 4.9M Horizon Europe project coordinated by the University of Coimbra | **Verified** directly against its official CORDIS project page (grant 101086521). See `METHODS.md` §6b. |
 | EWMA control chart (Roberts 1959) for statistical early-warning detection | **Real, independently confirmed** citation and formula; correctly implemented with exact (not asymptotic-only) time-varying control limits and independently tested. See `METHODS.md` §8. |
 | The early-warning layer's telemetry reflects real Mondego sensor readings | **No.** Synthetic Gaussian noise around a documented illustrative baseline (15±3 NTU) — see `METHODS.md` §8. The *algorithm* is real; the *data it's fed* is not. |
-| The auto-escalation rule (5 consecutive out-of-control ticks -> confirmed at fixed severity 0.7) | **Illustrative, uncalibrated.** A documented, tested design choice (debounced, idempotent, provenance-preserving) — not a statistically characterized false-alarm rate (no formal ARL), and not a claim about what a real deployment should let reach a clinician without human confirmation. See `METHODS.md` §8. |
+| The auto-escalation rule (5 consecutive out-of-control ticks -> confirmed at fixed severity 0.7) | **Characterized, not calibrated to real data.** 5 is the smallest persistence value meeting an explicit, stated false-escalation design target, derived by simulation and checked two independent ways (Monte Carlo + Markov chain) — see `EVALUATION.md`. That guarantee assumes independent, correctly-scaled Gaussian noise; `EVALUATION.md` §4 shows it collapsing by up to three orders of magnitude when that assumption fails, which is why the alert it produces is shown to a clinician as unconfirmed, never as a confirmed exposure (`SAFETY_CASE.md` H2). It is not calibrated against any real river's telemetry — none exists here. |
+| The peak-ETA sensitivity band shown on every forecast (API, card text, FHIR rationale, dashboard) | **An assumption, not a calibrated prediction interval.** Assumes the placeholder mean velocity is log-normal with log-sd 0.5 (about a factor of two either way); the closed-form band is checked against an independent Monte Carlo simulation of the same assumption in `test/uncertainty.test.ts`. It quantifies sensitivity to the placeholder, not real-world accuracy. See `src/hydrology/uncertainty.ts`. |
 | GDPR Article 9 / EU Health Data Space (Reg. (EU) 2025/327) compliance | **Not implemented.** Both are real, verified, currently-relevant EU instruments, named and discussed honestly as an acknowledged gap, not implemented or claimed. See `METHODS.md` §9. |
 | Douro (897 km) / Duero is the largest Iberian river basin, Spain to the Atlantic at Porto | **Verified** against the river's own Wikipedia infobox, fetched directly. |
 | All 4 Douro station names (Zamora, Barca d'Alva, Peso da Régua, Porto) and coordinates | **Verified** — each independently fetched from that place's own Wikipedia infobox, not estimated. |
@@ -258,6 +274,8 @@ seconds); an anomaly appears once it lasts 2 ticks, and escalates at 5.
 | The Elbe commission's warning and alarm plan and its ALAMO spread-forecast model | **Verified** via search results quoting ikse-mkol.org and vtei.cz (not fetched directly). The water side already forecasts spread; this prototype does not claim to replace that. |
 | Predicted arrival times on the added rivers | **Optimistic by construction.** Distances are straight-line between consecutive stations (always shorter than the river path), the 1.0 m/s velocity is a single unverified placeholder for all four large rivers, and the default dispersion coefficient is a small-channel value that understates plume spread on a river this size. |
 | A named hospital anywhere but Coimbra | **No.** Intentionally not modeled — see "One consequence path for every river" above. |
+| The emitted FHIR resources (RiskAssessment Bundle, the proposed ServiceRequest) are R4-structurally valid | **Checked with the official HL7 FHIR Validator**, not just asserted — see `conformance/README.md` for the exact findings (20 errors on the first attempt, fixed; 0 errors, 0 warnings now) and how to reproduce it. |
+| The CDS Hooks card, feedback and security implementation matches the 2.0 specification (card fields, `overrideReasons`, the `/feedback` endpoint shape, JWT authentication) | **Verified against the published spec text** (cds-hooks.hl7.org/2.0), each requirement pinned by a test — see `test/cdsConformance.test.ts` and `test/cdsAuth.test.ts`. Authentication is implemented but **off by default** (the demo needs no setup); see "Running it" below to enable it. |
 
 ## Architecture
 
@@ -277,16 +295,22 @@ seconds); an anomaly appears once it lasts 2 ticks, and escalates at 5.
 │   ├── analytics/
 │   │   ├── ewma.ts                  real EWMA statistical process control chart (Roberts 1959)
 │   │   ├── telemetryStream.ts       synthetic noisy per-station turbidity signal
-│   │   └── earlyWarningEngine.ts    wires the two into per-station early-warning state (every river) and auto-escalates sustained anomalies into that river's exposure engine
+│   │   ├── detectorConfig.ts        the detector's design constants -- the ONE place the production engine and the offline evaluation both read, so EVALUATION.md can't describe a different detector than the one that ships
+│   │   ├── baseline.ts              Phase-I baseline-adequacy gate (n >= 200, bounded autocorrelation) for a real sensor feed -- not wired into the synthetic demo telemetry
+│   │   └── earlyWarningEngine.ts    wires the above into per-station early-warning state (every river) and auto-escalates sustained anomalies into that river's exposure engine
+│   ├── evaluation/                  offline detector characterization (Monte Carlo + Markov chain), seeded and reproducible -- renders EVALUATION.md and MODEL_CARD.md; see `npm run evaluate`
+│   ├── safety/                      hazardLog.ts (data) + render.ts -- renders SAFETY_CASE.md; see `npm run safety-case`
 │   ├── hydrology/
 │   │   ├── advectionDispersion.ts   1D transport model (arrival/peak/clearance/probability)
 │   │   ├── channelDispersion.ts     Fischer (1979)/Liu (1977) dispersion-coefficient estimator
 │   │   ├── propagation.ts           multi-station cascading forecast (flow-order walk)
 │   │   ├── numericalValidation.ts   independent finite-difference PDE solver (validation only)
+│   │   ├── uncertainty.ts           sensitivity band on a forecast's ETA (assumed velocity uncertainty, not a calibrated interval)
 │   │   └── wfdClassification.ts     EU WFD EQR class mapping
 │   ├── fhir/
 │   │   ├── types.ts                 FHIR R4 types actually used here
-│   │   └── riskAssessment.ts        Forecast -> RiskAssessment.prediction serializer
+│   │   ├── bundle.ts                FHIR R4 `collection` Bundle assembly (deterministic per-entry `fullUrl`)
+│   │   └── riskAssessment.ts        Forecast -> RiskAssessment.prediction serializer (+ generated narrative)
 │   ├── cql/
 │   │   └── exposureRules.cql        Authored computable exposure/stewardship rules
 │   └── cdsHooks/
@@ -297,10 +321,18 @@ seconds); an anomaly appears once it lasts 2 ticks, and escalates at 5.
 │       ├── geolocation.ts           FHIR Patient geolocation extraction (shared)
 │       ├── patientView.ts           patient-view hook handler (nearest station across ALL rivers)
 │       ├── orderSelect.ts           order-select stewardship-trigger handler (Mondego-only)
-│       ├── discovery.ts             /cds-services manifest
-│       └── server.ts                Express app; registers one route family per registry entry (+ /demo/catchments)
-├── test/                            160 tests: hydrology math, PDE validation, FHIR shape, CDS Hooks (incl. card provenance wording), exposure phases, EWMA/telemetry/auto-escalation, and the river registry (integrity, direction, isolation, cards, escalation on every river)
+│       ├── discovery.ts             /cds-services manifest (real, dereferenceable service ids)
+│       ├── feedback.ts              CDS Hooks `/feedback` endpoint (accepted/overridden outcomes, override reasons; free text never stored)
+│       ├── auth.ts                  CDS Hooks JWT authentication (spec 2.0 "Security and Safety"); off by default
+│       └── server.ts                Express app; registers one route family per registry entry (+ /demo/catchments, /monitoring/feedback)
+├── test/                            288 tests across 17 files: hydrology math, PDE validation, FHIR shape + official-validator-matched conformance, CDS Hooks (card provenance, feedback, auth), exposure phases, EWMA/telemetry/auto-escalation, the detector evaluation and safety-case traceability, and the river registry
+├── scripts/                         evaluate.ts / renderEvaluation.ts / renderSafetyCase.ts / exportFhirSamples.ts -- regenerate the four generated documents below
 ├── web/                             React + Vite + Tailwind + MapLibre dashboard (3 views; a Europe coverage map; everything river-specific comes from /demo/catchments)
+├── conformance/                     FHIR samples + the official-validator findings (README.md)
+├── evaluation/                      results.json backing EVALUATION.md and MODEL_CARD.md (seeded, reproducible)
+├── EVALUATION.md                    detector evidence: ARL0/ARL1, comparison with CUSUM/Shewhart, the escalation rule's false-alarm rate and how it degrades, baseline-estimation behaviour
+├── SAFETY_CASE.md                   intended use, EU MDR/AI Act self-assessment, an 11-hazard ISO-14971-style log with test-backed traceability
+├── MODEL_CARD.md                    Mitchell et al.-format model card + a datasheet for the synthetic telemetry
 ├── METHODS.md                       governing equations, parameter provenance, citations
 └── index.html                       static "about this project" landing page
 ```
@@ -310,11 +342,28 @@ seconds); an anomaly appears once it lasts 2 ticks, and escalates at 5.
 ```bash
 npm install
 npm run dev     # API on http://127.0.0.1:4300, auto-reload
-npm test        # 160 tests
+npm test        # 288 tests
 npm run build   # tsc -> dist/
 
 # Dashboard (separate terminal, needs the API running above)
 cd web && npm install && npm run dev   # http://localhost:5174
+
+# Regenerate the generated documents (all reproducible from a fixed seed)
+npm run evaluate             # -> EVALUATION.md, MODEL_CARD.md (~1 minute)
+npm run safety-case          # -> SAFETY_CASE.md (instant)
+npm run conformance:samples  # -> conformance/samples/*.json, for the official HL7 validator (see conformance/README.md)
+```
+
+By default the demo runs **open**: no CDS Hooks authentication, and the
+`/demo/*` control routes (report a station contaminated, fast-forward,
+inject a synthetic anomaly) are unauthenticated by design, since that is
+what lets the dashboard drive the demo with no setup. To run it the way
+`SAFETY_CASE.md` hazard H3 assumes for anything beyond a demo:
+
+```bash
+OAH_DEMO_ROUTES=off npm run dev   # 404s every /demo/* route; the clinical surface (CDS Hooks, feedback) is untouched
+OAH_SEED=12345 npm run dev        # reproducible synthetic telemetry instead of Math.random
+# CDS Hooks JWT auth: set OAH_CDS_TRUSTED_JWKS to a JWKS file ({"keys":[...]}) -- see src/cdsHooks/auth.ts
 ```
 
 The dashboard opens on **Water Authority Operations**: a Europe-wide
@@ -398,37 +447,56 @@ curl -X POST http://127.0.0.1:4300/cds-services/patient-view \
 
 ## Not implemented / out of scope
 
+The full, evidence-linked version of this list -- with which test proves
+each *is* handled and exactly what is missing for each that isn't -- is
+**`SAFETY_CASE.md`**'s hazard log (H1-H11). Summary:
+
 - No spatial catchment polygon — `patientView.ts` uses a fixed radius
   around each station's point instead. A real deployment needs a surveyed
-  network/catchment geometry.
-- No persistent store — in-memory state only, single process.
-- No authentication on any endpoint.
+  network/catchment geometry (`SAFETY_CASE.md` H6).
+- No persistent store — in-memory state only, single process; a restart
+  silently drops every flag, and a station's own flag never expires on its
+  own (`SAFETY_CASE.md` H7).
+- CDS Hooks JWT authentication and a `/demo`-route kill switch are
+  **implemented** (spec 2.0 "Security and Safety": asymmetric algorithms
+  only, replay-checked, audience-checked -- see `test/cdsAuth.test.ts`) but
+  **off by default**, so the demo needs no setup. There is still no real
+  operator-confirmation workflow (identity, authorisation, audit trail) --
+  the "report confirmed contamination" button is a demo control, not one
+  (`SAFETY_CASE.md` H3).
 - No live CQL execution engine (see the CQL note above).
 - `order-select`'s CDS Hooks context doesn't carry a geocoded patient
   address the way `patient-view`'s prefetch does, so it cannot pick a river
   from a patient: its stewardship trigger stays scoped to the Mondego
   network and checks "is anything confirmed anywhere in it" — a documented
   simplification, see `orderSelect.ts`. (It is also not surfaced in the
-  dashboard.)
+  dashboard.) `SAFETY_CASE.md` H9.
 - One network-wide mean velocity per river (Mondego 0.36 m/s, Douro 0.5,
   and a single 1.0 m/s placeholder for Tagus/Danube/Rhine/Elbe/Oder) is
   applied to every segment; no gauge data was checked for any of them. A
   real deployment would vary this per reach based on channel geometry (see
-  `channelDispersion.ts` for the estimator that would support that).
+  `channelDispersion.ts` for the estimator that would support that). Every
+  ETA now carries an explicit sensitivity band quantifying that, but it
+  remains uncalibrated (`SAFETY_CASE.md` H5).
 - Distances are straight-line between consecutive stations, so predicted
   arrival times are optimistic -- most visibly on the Danube, where
   Vukovar -> Ruse runs through non-EU Serbia and the real river path is far
   longer than the straight line.
 - The auto-escalation rule (5 consecutive out-of-control ticks, fixed 0.7
-  severity) is uncalibrated, and the detector's false-alarm rate is not
-  characterized as a formal average run length -- see "One causal chain"
-  above. Escalation fires once per sustained event: if an operator clears
-  a station manually while its underlying anomaly persists, it is not
-  re-escalated until the test event is stopped and restarted.
+  severity) **is** now characterized as a formal average run length, with
+  its degradation under wrong assumptions quantified -- see `EVALUATION.md`
+  -- but that characterization is simulation-only: it is not calibrated
+  against any real river's telemetry, and the baseline-adequacy gate that
+  would screen a real feed (`src/analytics/baseline.ts`) is not wired into
+  anything. Escalation fires once per sustained event: if an operator
+  clears a station manually while its underlying anomaly persists, it is
+  not re-escalated until the test event is stopped and restarted.
 - No GDPR consent management, Article 30 processing register, or Data
   Protection Impact Assessment; no EHDS conformance (Health Data Access
-  Body process, certified EHR system). See `METHODS.md` §9 for what these
-  real EU instruments require and why they're out of scope here.
+  Body process, certified EHR system). See `METHODS.md` §9 and
+  `SAFETY_CASE.md` H8/§2 for what these real EU instruments require, a
+  self-assessment of whether the MDR or the AI Act would apply, and why
+  none of it is implemented here.
 - The Incident Timeline is derived client-side from already-polled state,
   not a persisted server-side event log -- reloading the page clears it
   (same in-memory-only caveat as the rest of this prototype).
@@ -443,3 +511,11 @@ pathway appropriate to clinical decision support software in the relevant
 jurisdiction (e.g. EU MDR/IVDR for software as a medical device), a real
 safety/hazard analysis, and sign-off from the clinical teams who would
 actually use it.
+
+**`SAFETY_CASE.md`** is the developers' own attempt at exactly that
+analysis, done honestly rather than skipped: an intended-use statement, a
+self-assessment against MDR Rule 11 (quoting MDCG 2019-11) and the AI Act's
+definition guidelines, and an 11-hazard log where every claimed control
+traces to an automated test (`test/safetyCase.test.ts` enforces that link).
+It is explicitly **not** a substitute for a real regulatory or clinical
+safety review -- it says so on its first line.

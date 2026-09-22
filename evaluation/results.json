@@ -1,0 +1,1155 @@
+{
+  "generatedWith": {
+    "node": "v22.19.0",
+    "seed": 20260921
+  },
+  "config": {
+    "seed": 20260921,
+    "arl0Runs": 40000,
+    "delayRuns": 20000,
+    "calibrationRuns": 8000,
+    "escalationTicks": 20000000,
+    "robustnessTicks": 5000000,
+    "robustnessRuns": 10000,
+    "maxTicks": 1000000
+  },
+  "design": {
+    "lambda": 0.25,
+    "L": 3,
+    "escalationThresholdTicks": 5
+  },
+  "networkStations": 33,
+  "theory": {
+    "shewhartArl0Exact": 370.3983473449716,
+    "markovArl0": [
+      {
+        "cells": 101,
+        "arl0": 502.16597983656646
+      },
+      {
+        "cells": 201,
+        "arl0": 502.71088578941345
+      },
+      {
+        "cells": 401,
+        "arl0": 502.8488575323901
+      }
+    ],
+    "markovArl1": [
+      {
+        "shift": 0.5,
+        "arl1": 48.44997181859384
+      },
+      {
+        "shift": 1,
+        "arl1": 11.154486309734498
+      },
+      {
+        "shift": 1.5,
+        "arl1": 5.469829075224722
+      },
+      {
+        "shift": 2,
+        "arl1": 3.6168307749436988
+      },
+      {
+        "shift": 3,
+        "arl1": 2.258975904665697
+      },
+      {
+        "shift": 5,
+        "arl1": 1.3215386719402524
+      },
+      {
+        "shift": 15,
+        "arl1": 1
+      }
+    ],
+    "mcAsymptotic": {
+      "n": 40000,
+      "mean": 500.7033,
+      "se": 2.4902585031806383,
+      "median": 349,
+      "p05": 29,
+      "p95": 1490,
+      "censored": 0
+    },
+    "mcProduction": {
+      "n": 40000,
+      "mean": 495.745675,
+      "se": 2.484271230901239,
+      "median": 344,
+      "p05": 25,
+      "p95": 1468,
+      "censored": 0
+    }
+  },
+  "delay": {
+    "targetArl0": 495.745675,
+    "cusum": {
+      "k": 0.5,
+      "h": 5.047454833984375
+    },
+    "shewhartK": 3.087693597969338,
+    "rows": [
+      {
+        "shift": 0.5,
+        "ewma": {
+          "n": 20000,
+          "mean": 47.1415,
+          "se": 0.3071955685607604,
+          "median": 34,
+          "p05": 5,
+          "p95": 135,
+          "censored": 0
+        },
+        "cusum": {
+          "n": 20000,
+          "mean": 38.5455,
+          "se": 0.22310107617850422,
+          "median": 29,
+          "p05": 8,
+          "p95": 102,
+          "censored": 0
+        },
+        "shewhartMean": 200.0859498460007,
+        "shewhartMedian": 139
+      },
+      {
+        "shift": 1,
+        "ewma": {
+          "n": 20000,
+          "mean": 10.40965,
+          "se": 0.053420637698381214,
+          "median": 8,
+          "p05": 2,
+          "p95": 25,
+          "censored": 0
+        },
+        "cusum": {
+          "n": 20000,
+          "mean": 10.37765,
+          "se": 0.03842310946087044,
+          "median": 9,
+          "p05": 4,
+          "p95": 21,
+          "censored": 0
+        },
+        "shewhartMean": 54.24603955141572,
+        "shewhartMedian": 38
+      },
+      {
+        "shift": 1.5,
+        "ewma": {
+          "n": 20000,
+          "mean": 4.7606,
+          "se": 0.020109191952439237,
+          "median": 4,
+          "p05": 1,
+          "p95": 10,
+          "censored": 0
+        },
+        "cusum": {
+          "n": 20000,
+          "mean": 5.76335,
+          "se": 0.015746737340218885,
+          "median": 5,
+          "p05": 3,
+          "p95": 10,
+          "censored": 0
+        },
+        "shewhartMean": 17.799909296826968,
+        "shewhartMedian": 12
+      },
+      {
+        "shift": 2,
+        "ewma": {
+          "n": 20000,
+          "mean": 2.9325,
+          "se": 0.010766521415906354,
+          "median": 3,
+          "p05": 1,
+          "p95": 6,
+          "censored": 0
+        },
+        "cusum": {
+          "n": 20000,
+          "mean": 4.04655,
+          "se": 0.009259505483398732,
+          "median": 4,
+          "p05": 2,
+          "p95": 6,
+          "censored": 0
+        },
+        "shewhartMean": 7.227241449294744,
+        "shewhartMedian": 5
+      },
+      {
+        "shift": 3,
+        "ewma": {
+          "n": 20000,
+          "mean": 1.61195,
+          "se": 0.004995458698195836,
+          "median": 1,
+          "p05": 1,
+          "p95": 3,
+          "censored": 0
+        },
+        "cusum": {
+          "n": 20000,
+          "mean": 2.58665,
+          "se": 0.004608758065633592,
+          "median": 3,
+          "p05": 2,
+          "p95": 4,
+          "censored": 0
+        },
+        "shewhartMean": 2.150259697742388,
+        "shewhartMedian": 2
+      },
+      {
+        "shift": 5,
+        "ewma": {
+          "n": 20000,
+          "mean": 1.0237,
+          "se": 0.00107794879223446,
+          "median": 1,
+          "p05": 1,
+          "p95": 1,
+          "censored": 0
+        },
+        "cusum": {
+          "n": 20000,
+          "mean": 1.70915,
+          "se": 0.003251667655546303,
+          "median": 2,
+          "p05": 1,
+          "p95": 2,
+          "censored": 0
+        },
+        "shewhartMean": 1.0287202783094613,
+        "shewhartMedian": 1
+      },
+      {
+        "shift": 15,
+        "ewma": {
+          "n": 20000,
+          "mean": 1,
+          "se": 0,
+          "median": 1,
+          "p05": 1,
+          "p95": 1,
+          "censored": 0
+        },
+        "cusum": {
+          "n": 20000,
+          "mean": 1,
+          "se": 0,
+          "median": 1,
+          "p05": 1,
+          "p95": 1,
+          "censored": 0
+        },
+        "shewhartMean": 1,
+        "shewhartMedian": 0
+      }
+    ]
+  },
+  "persistence": [
+    {
+      "k": 1,
+      "falseEscalation": {
+        "n": 39898,
+        "mean": 501.2715173692917,
+        "se": 2.502338424165456,
+        "median": 347,
+        "p05": 26,
+        "p95": 1510,
+        "censored": 0,
+        "totalTicks": 20000000
+      },
+      "delays": [
+        {
+          "shift": 1,
+          "summary": {
+            "n": 20000,
+            "mean": 10.39745,
+            "se": 0.054116038308019476,
+            "median": 8,
+            "p05": 2,
+            "p95": 25,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 2,
+          "summary": {
+            "n": 20000,
+            "mean": 2.9293,
+            "se": 0.010787997707857426,
+            "median": 3,
+            "p05": 1,
+            "p95": 6,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 3,
+          "summary": {
+            "n": 20000,
+            "mean": 1.6053,
+            "se": 0.00493171487320414,
+            "median": 1,
+            "p05": 1,
+            "p95": 3,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 15,
+          "summary": {
+            "n": 20000,
+            "mean": 1,
+            "se": 0,
+            "median": 1,
+            "p05": 1,
+            "p95": 1,
+            "censored": 0
+          }
+        }
+      ]
+    },
+    {
+      "k": 2,
+      "falseEscalation": {
+        "n": 8568,
+        "mean": 2333.330065359477,
+        "se": 25.33487444934413,
+        "median": 1638,
+        "p05": 120,
+        "p95": 6975,
+        "censored": 0,
+        "totalTicks": 20000000
+      },
+      "delays": [
+        {
+          "shift": 1,
+          "summary": {
+            "n": 20000,
+            "mean": 16.0899,
+            "se": 0.08311733467855052,
+            "median": 13,
+            "p05": 4,
+            "p95": 39,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 2,
+          "summary": {
+            "n": 20000,
+            "mean": 4.2684,
+            "se": 0.012331085709853234,
+            "median": 4,
+            "p05": 2,
+            "p95": 7,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 3,
+          "summary": {
+            "n": 20000,
+            "mean": 2.6606,
+            "se": 0.005296865567412247,
+            "median": 3,
+            "p05": 2,
+            "p95": 4,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 15,
+          "summary": {
+            "n": 20000,
+            "mean": 2,
+            "se": 0,
+            "median": 2,
+            "p05": 2,
+            "p95": 2,
+            "censored": 0
+          }
+        }
+      ]
+    },
+    {
+      "k": 3,
+      "falseEscalation": {
+        "n": 2218,
+        "mean": 9016.158250676284,
+        "se": 188.58195193722307,
+        "median": 6190,
+        "p05": 552,
+        "p95": 26617,
+        "censored": 0,
+        "totalTicks": 20000000
+      },
+      "delays": [
+        {
+          "shift": 1,
+          "summary": {
+            "n": 20000,
+            "mean": 22.54635,
+            "se": 0.12056780006948672,
+            "median": 18,
+            "p05": 6,
+            "p95": 57,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 2,
+          "summary": {
+            "n": 20000,
+            "mean": 5.4556,
+            "se": 0.013692363055378765,
+            "median": 5,
+            "p05": 3,
+            "p95": 9,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 3,
+          "summary": {
+            "n": 20000,
+            "mean": 3.66045,
+            "se": 0.005311704113091466,
+            "median": 4,
+            "p05": 3,
+            "p95": 5,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 15,
+          "summary": {
+            "n": 20000,
+            "mean": 3,
+            "se": 0,
+            "median": 3,
+            "p05": 3,
+            "p95": 3,
+            "censored": 0
+          }
+        }
+      ]
+    },
+    {
+      "k": 4,
+      "falseEscalation": {
+        "n": 611,
+        "mean": 32696.584288052374,
+        "se": 1343.594524304767,
+        "median": 21959,
+        "p05": 1975,
+        "p95": 98632,
+        "censored": 0,
+        "totalTicks": 20000000
+      },
+      "delays": [
+        {
+          "shift": 1,
+          "summary": {
+            "n": 20000,
+            "mean": 29.99525,
+            "se": 0.16523566961525263,
+            "median": 23,
+            "p05": 7,
+            "p95": 76,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 2,
+          "summary": {
+            "n": 20000,
+            "mean": 6.5936,
+            "se": 0.01491486086605193,
+            "median": 6,
+            "p05": 4,
+            "p95": 11,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 3,
+          "summary": {
+            "n": 20000,
+            "mean": 4.6575,
+            "se": 0.005390374783539546,
+            "median": 5,
+            "p05": 4,
+            "p95": 6,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 15,
+          "summary": {
+            "n": 20000,
+            "mean": 4,
+            "se": 0,
+            "median": 4,
+            "p05": 4,
+            "p95": 4,
+            "censored": 0
+          }
+        }
+      ]
+    },
+    {
+      "k": 5,
+      "falseEscalation": {
+        "n": 164,
+        "mean": 121255.96951219512,
+        "se": 9083.809581110088,
+        "median": 88523,
+        "p05": 5403,
+        "p95": 353684,
+        "censored": 0,
+        "totalTicks": 20000000
+      },
+      "delays": [
+        {
+          "shift": 1,
+          "summary": {
+            "n": 20000,
+            "mean": 40.1926,
+            "se": 0.22730470438033412,
+            "median": 30,
+            "p05": 9,
+            "p95": 104,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 2,
+          "summary": {
+            "n": 20000,
+            "mean": 7.7104,
+            "se": 0.015784931111745382,
+            "median": 7,
+            "p05": 5,
+            "p95": 12,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 3,
+          "summary": {
+            "n": 20000,
+            "mean": 5.6599,
+            "se": 0.0053775501301492066,
+            "median": 6,
+            "p05": 5,
+            "p95": 7,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 15,
+          "summary": {
+            "n": 20000,
+            "mean": 5,
+            "se": 0,
+            "median": 5,
+            "p05": 5,
+            "p95": 5,
+            "censored": 0
+          }
+        }
+      ]
+    },
+    {
+      "k": 6,
+      "falseEscalation": {
+        "n": 41,
+        "mean": 467673.68292682926,
+        "se": 67084.5791145669,
+        "median": 296238,
+        "p05": 61748,
+        "p95": 1438210,
+        "censored": 0,
+        "totalTicks": 20000000
+      },
+      "delays": [
+        {
+          "shift": 1,
+          "summary": {
+            "n": 20000,
+            "mean": 52.5621,
+            "se": 0.3102947329887593,
+            "median": 39,
+            "p05": 11,
+            "p95": 140,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 2,
+          "summary": {
+            "n": 20000,
+            "mean": 8.80685,
+            "se": 0.01712795440839739,
+            "median": 8,
+            "p05": 6,
+            "p95": 14,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 3,
+          "summary": {
+            "n": 20000,
+            "mean": 6.6667,
+            "se": 0.005417289253043552,
+            "median": 7,
+            "p05": 6,
+            "p95": 8,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 15,
+          "summary": {
+            "n": 20000,
+            "mean": 6,
+            "se": 0,
+            "median": 6,
+            "p05": 6,
+            "p95": 6,
+            "censored": 0
+          }
+        }
+      ]
+    },
+    {
+      "k": 7,
+      "falseEscalation": {
+        "n": 16,
+        "mean": 1129954.75,
+        "se": 196385.37246967803,
+        "median": 1195986,
+        "p05": 191915,
+        "p95": 2245895,
+        "censored": 0,
+        "totalTicks": 20000000
+      },
+      "delays": [
+        {
+          "shift": 1,
+          "summary": {
+            "n": 20000,
+            "mean": 69.3354,
+            "se": 0.41838496344979076,
+            "median": 52,
+            "p05": 13,
+            "p95": 186,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 2,
+          "summary": {
+            "n": 20000,
+            "mean": 9.88,
+            "se": 0.018089260932057136,
+            "median": 9,
+            "p05": 7,
+            "p95": 15,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 3,
+          "summary": {
+            "n": 20000,
+            "mean": 7.65955,
+            "se": 0.00537527995147472,
+            "median": 8,
+            "p05": 7,
+            "p95": 9,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 15,
+          "summary": {
+            "n": 20000,
+            "mean": 7,
+            "se": 0,
+            "median": 7,
+            "p05": 7,
+            "p95": 7,
+            "censored": 0
+          }
+        }
+      ]
+    },
+    {
+      "k": 8,
+      "falseEscalation": {
+        "n": 7,
+        "mean": 2738745.285714286,
+        "se": 516420.20037837746,
+        "median": 2805077,
+        "p05": 1523162,
+        "p95": 5377742,
+        "censored": 0,
+        "totalTicks": 20000000
+      },
+      "delays": [
+        {
+          "shift": 1,
+          "summary": {
+            "n": 20000,
+            "mean": 89.71785,
+            "se": 0.5533175806768936,
+            "median": 66,
+            "p05": 15,
+            "p95": 247,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 2,
+          "summary": {
+            "n": 20000,
+            "mean": 10.9777,
+            "se": 0.019411568096081466,
+            "median": 10,
+            "p05": 8,
+            "p95": 17,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 3,
+          "summary": {
+            "n": 20000,
+            "mean": 8.6707,
+            "se": 0.005506776891211628,
+            "median": 9,
+            "p05": 8,
+            "p95": 10,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 15,
+          "summary": {
+            "n": 20000,
+            "mean": 8,
+            "se": 0,
+            "median": 8,
+            "p05": 8,
+            "p95": 8,
+            "censored": 0
+          }
+        }
+      ]
+    },
+    {
+      "k": 10,
+      "falseEscalation": {
+        "n": 1,
+        "mean": 14498906,
+        "se": 0,
+        "median": 14498906,
+        "p05": 14498906,
+        "p95": 14498906,
+        "censored": 0,
+        "totalTicks": 20000000
+      },
+      "delays": [
+        {
+          "shift": 1,
+          "summary": {
+            "n": 20000,
+            "mean": 153.2905,
+            "se": 0.9951514592306181,
+            "median": 110,
+            "p05": 21,
+            "p95": 436,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 2,
+          "summary": {
+            "n": 20000,
+            "mean": 13.18455,
+            "se": 0.022053545810575174,
+            "median": 12,
+            "p05": 10,
+            "p95": 19,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 3,
+          "summary": {
+            "n": 20000,
+            "mean": 10.6659,
+            "se": 0.005458969638812205,
+            "median": 11,
+            "p05": 10,
+            "p95": 12,
+            "censored": 0
+          }
+        },
+        {
+          "shift": 15,
+          "summary": {
+            "n": 20000,
+            "mean": 10,
+            "se": 0,
+            "median": 10,
+            "p05": 10,
+            "p95": 10,
+            "censored": 0
+          }
+        }
+      ]
+    }
+  ],
+  "robustness": [
+    {
+      "scenario": "Design assumptions hold",
+      "detail": "independent Gaussian, sd as assumed",
+      "arl0": {
+        "n": 10000,
+        "mean": 500.6973,
+        "se": 4.94618793868404,
+        "median": 346,
+        "p05": 26,
+        "p95": 1499,
+        "censored": 0
+      },
+      "escalationArl": {
+        "n": 36,
+        "mean": 133767.69444444444,
+        "se": 25815.801760814666,
+        "median": 89577,
+        "p05": 14026,
+        "p95": 437081,
+        "censored": 0,
+        "totalTicks": 5000000
+      }
+    },
+    {
+      "scenario": "True sd 1.25x assumed",
+      "detail": "baseline noise underestimated by 20%",
+      "arl0": {
+        "n": 10000,
+        "mean": 93.6234,
+        "se": 0.929812557660542,
+        "median": 66,
+        "p05": 4,
+        "p95": 277,
+        "censored": 0
+      },
+      "escalationArl": {
+        "n": 727,
+        "mean": 6876.2283356258595,
+        "se": 255.28648688477614,
+        "median": 4634,
+        "p05": 387,
+        "p95": 19669,
+        "censored": 0,
+        "totalTicks": 5000000
+      }
+    },
+    {
+      "scenario": "True sd 1.5x assumed",
+      "detail": "baseline noise underestimated by a third",
+      "arl0": {
+        "n": 10000,
+        "mean": 35.2753,
+        "se": 0.35970650517885683,
+        "median": 24,
+        "p05": 2,
+        "p95": 107,
+        "censored": 0
+      },
+      "escalationArl": {
+        "n": 3976,
+        "mean": 1256.9484406438633,
+        "se": 19.64800258795952,
+        "median": 870,
+        "p05": 73,
+        "p95": 3728,
+        "censored": 0,
+        "totalTicks": 5000000
+      }
+    },
+    {
+      "scenario": "True sd 2x assumed",
+      "detail": "baseline noise underestimated by half",
+      "arl0": {
+        "n": 10000,
+        "mean": 11.863,
+        "se": 0.12509679460642276,
+        "median": 8,
+        "p05": 1,
+        "p95": 37,
+        "censored": 0
+      },
+      "escalationArl": {
+        "n": 21926,
+        "mean": 228.03767217002644,
+        "se": 1.5107061787926028,
+        "median": 161,
+        "p05": 16,
+        "p95": 677,
+        "censored": 0,
+        "totalTicks": 5000000
+      }
+    },
+    {
+      "scenario": "Autocorrelated, phi = 0.1",
+      "detail": "AR(1), unit marginal variance",
+      "arl0": {
+        "n": 10000,
+        "mean": 278.5757,
+        "se": 2.7460481432399346,
+        "median": 197,
+        "p05": 15,
+        "p95": 822,
+        "censored": 0
+      },
+      "escalationArl": {
+        "n": 185,
+        "mean": 26886.38918918919,
+        "se": 2053.690891204202,
+        "median": 18175,
+        "p05": 952,
+        "p95": 81685,
+        "censored": 0,
+        "totalTicks": 5000000
+      }
+    },
+    {
+      "scenario": "Autocorrelated, phi = 0.2",
+      "detail": "AR(1), unit marginal variance",
+      "arl0": {
+        "n": 10000,
+        "mean": 172.5406,
+        "se": 1.6783792333227574,
+        "median": 123,
+        "p05": 10,
+        "p95": 503,
+        "censored": 0
+      },
+      "escalationArl": {
+        "n": 718,
+        "mean": 6960.988857938719,
+        "se": 261.8167388599253,
+        "median": 4661,
+        "p05": 484,
+        "p95": 21712,
+        "censored": 0,
+        "totalTicks": 5000000
+      }
+    },
+    {
+      "scenario": "Autocorrelated, phi = 0.3",
+      "detail": "AR(1), unit marginal variance",
+      "arl0": {
+        "n": 10000,
+        "mean": 114.2334,
+        "se": 1.1127795739867004,
+        "median": 81,
+        "p05": 7,
+        "p95": 340,
+        "censored": 0
+      },
+      "escalationArl": {
+        "n": 1893,
+        "mean": 2639.889593238246,
+        "se": 60.32896396065927,
+        "median": 1851,
+        "p05": 160,
+        "p95": 7966,
+        "censored": 0,
+        "totalTicks": 5000000
+      }
+    },
+    {
+      "scenario": "Autocorrelated, phi = 0.6",
+      "detail": "AR(1), unit marginal variance",
+      "arl0": {
+        "n": 10000,
+        "mean": 48.0111,
+        "se": 0.46470673861510936,
+        "median": 34,
+        "p05": 4,
+        "p95": 141,
+        "censored": 0
+      },
+      "escalationArl": {
+        "n": 22184,
+        "mean": 225.38739632167326,
+        "se": 1.4816013182131316,
+        "median": 158,
+        "p05": 16,
+        "p95": 663,
+        "censored": 0,
+        "totalTicks": 5000000
+      }
+    },
+    {
+      "scenario": "Autocorrelated, phi = 0.9",
+      "detail": "AR(1), unit marginal variance",
+      "arl0": {
+        "n": 10000,
+        "mean": 35.7782,
+        "se": 0.3517933147881462,
+        "median": 25,
+        "p05": 3,
+        "p95": 105,
+        "censored": 0
+      },
+      "escalationArl": {
+        "n": 98660,
+        "mean": 50.679049260085144,
+        "se": 0.18182322497703257,
+        "median": 30,
+        "p05": 6,
+        "p95": 166,
+        "censored": 0,
+        "totalTicks": 5000000
+      }
+    },
+    {
+      "scenario": "Right-skewed (lognormal, CV 0.2)",
+      "detail": "skewness ~0.6, same mean and sd",
+      "arl0": {
+        "n": 10000,
+        "mean": 354.5528,
+        "se": 3.576421205630008,
+        "median": 244,
+        "p05": 18,
+        "p95": 1061,
+        "censored": 0
+      },
+      "escalationArl": {
+        "n": 83,
+        "mean": 59692.301204819276,
+        "se": 6578.449193017428,
+        "median": 38685,
+        "p05": 4274,
+        "p95": 189941,
+        "censored": 0,
+        "totalTicks": 5000000
+      }
+    }
+  ],
+  "phaseOne": [
+    {
+      "n": 20,
+      "arl0": {
+        "n": 10000,
+        "mean": 1117.0724,
+        "se": 74.18354648513869,
+        "median": 136,
+        "p05": 7,
+        "p95": 3513,
+        "censored": 0
+      },
+      "earlyFalseAlarmShare": 0.2861
+    },
+    {
+      "n": 50,
+      "arl0": {
+        "n": 10000,
+        "mean": 595.2449,
+        "se": 27.24898159880869,
+        "median": 213,
+        "p05": 13,
+        "p95": 2064,
+        "censored": 0
+      },
+      "earlyFalseAlarmShare": 0.1812
+    },
+    {
+      "n": 200,
+      "arl0": {
+        "n": 10000,
+        "mean": 502.9053,
+        "se": 6.224727452377059,
+        "median": 303,
+        "p05": 21,
+        "p95": 1651,
+        "censored": 0
+      },
+      "earlyFalseAlarmShare": 0.1157
+    },
+    {
+      "n": 1000,
+      "arl0": {
+        "n": 10000,
+        "mean": 494.8202,
+        "se": 5.166102320755445,
+        "median": 336,
+        "p05": 23,
+        "p95": 1507,
+        "censored": 0
+      },
+      "earlyFalseAlarmShare": 0.1
+    }
+  ],
+  "gate": [
+    {
+      "n": 200,
+      "phi": 0,
+      "rejectShare": 0.0486
+    },
+    {
+      "n": 200,
+      "phi": 0.1,
+      "rejectShare": 0.2676
+    },
+    {
+      "n": 200,
+      "phi": 0.3,
+      "rejectShare": 0.9832
+    },
+    {
+      "n": 200,
+      "phi": 0.6,
+      "rejectShare": 1
+    },
+    {
+      "n": 1000,
+      "phi": 0,
+      "rejectShare": 0.002
+    },
+    {
+      "n": 1000,
+      "phi": 0.1,
+      "rejectShare": 0.4788
+    },
+    {
+      "n": 1000,
+      "phi": 0.3,
+      "rejectShare": 1
+    },
+    {
+      "n": 1000,
+      "phi": 0.6,
+      "rejectShare": 1
+    }
+  ]
+}
