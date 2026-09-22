@@ -2,7 +2,7 @@
   "name": "oah-mondego",
   "version": "0.1.0",
   "private": true,
-  "description": "River contamination to clinical alerts across seven real European rivers (Mondego, Douro, Tagus, Danube, Rhine, Elbe, Oder; 33 stations, 13 EU member states): statistical early-warning detection (EWMA control chart), downstream propagation forecasting, FHIR R4 RiskAssessment predictions and an Express CDS Hooks (v3.0 ballot) service.",
+  "description": "River contamination to clinical alerts across nine real European rivers (Mondego, Douro, Tagus, Danube, Rhine, Elbe, Oder, Meuse, Sava; 41 stations, 15 EU member states): statistical early-warning detection (EWMA control chart), downstream propagation forecasting, FHIR R4 RiskAssessment predictions and an Express CDS Hooks (v3.0 ballot) service.",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/cdsHooks/server.ts",

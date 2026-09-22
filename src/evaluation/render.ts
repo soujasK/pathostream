@@ -186,7 +186,11 @@ ${table(
 
 ## 7. Decisions taken from these results
 
-1. **Keep k = ${k}**${smallestK === k ? ` — it is the smallest persistence meeting the stated design target with a trustworthy estimate` : ""}. It is a documented, evidence-backed operating point, *conditional on §4's assumptions*.
+1. ${
+    smallestK === k
+      ? `**Keep k = ${k}** — it is the smallest persistence meeting the stated design target with a trustworthy estimate. A documented, evidence-backed operating point, *conditional on §4's assumptions*.`
+      : `**MISMATCH: the shipped k = ${k} does NOT meet the stated design target** (§3) -- the evidence now says the smallest adequate value is k = ${smallestK ?? "undetermined (no k tested here reaches it with a trustworthy estimate)"}. This is not a documentation lag: it means the currently-shipped escalation rule is weaker than its own stated justification. **Re-derive \`ESCALATION_THRESHOLD_TICKS\` (src/analytics/detectorConfig.ts) and re-run \`npm run evaluate\` before relying on this rule**, most likely because the network's station count (or the design target itself) changed after k was last chosen.`
+  }
 2. **A statistically-inferred flag is never presented to a clinician as a confirmed exposure**: the CDS Hooks card is downgraded to \`warning\`, labelled unconfirmed, and carries no empiric-therapy directive or order suggestion (SAFETY_CASE.md, hazard H2). This follows directly from §4: the alarm is only as trustworthy as its baseline.
 3. **Baseline gate required before any real feed** (§5).
 4. **Expect occasional spurious escalations in a long-running demo**: at the demo's ${1.2}-second tick, ${stations} stations and ~${int(chosen!.falseEscalation.mean)} readings per false escalation, the network-wide interval is about ${hoursText(chosen!.falseEscalation.mean / stations, 1.2 / 60)} of continuous ticking. That is the measured false-alarm rate, not a bug.

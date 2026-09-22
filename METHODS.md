@@ -258,7 +258,10 @@ Coordinates are therefore CITY-CENTRE points, not gauges. 23 stations,
 
 Together with Mondego (6) and Douro (4) that is 33 stations in 13 EU member
 states (PT, ES, FR, DE, NL, AT, SK, HU, HR, BG, RO, CZ, PL), computed from
-the data rather than asserted.
+the data rather than asserted. (§6d below adds two more rivers and two
+more member states, bringing the running total to 41 stations / 15
+states -- this section's own 33/13 figures describe the state after these
+five rivers specifically, not the final count.)
 
 **Real water-side governance, and how strongly each was confirmed.**
 - *Rhine — confirmed directly on iksr.org:* since 1985 seven international
@@ -321,6 +324,58 @@ Fischer/Liu estimator would need real channel geometry). The point the
 numbers do support is scale, not precision: plume travel time is minutes on
 a Coimbra reach but days on the Danube, and that lead time is the argument
 for warning downstream clinicians.
+
+## 6d. Two more rivers, chosen to add EU member states the first seven missed
+
+After the first seven rivers (Mondego, Douro, Tagus, Danube, Rhine, Elbe,
+Oder), coverage stood at 13 of 27 EU member states. Two more rivers were
+added specifically to close part of that gap, using the identical method
+as §6c: river facts and station coordinates from each place's own
+Wikipedia infobox, fetched directly, with the article checked to confirm
+the place lies on that river (not a tributary).
+
+| River | Length / basin | Stations (all fetched directly) | Member state added |
+|---|---|---|---|
+| Meuse | 925 km / 34,548 km² | Charleville-Mézières (FR), Namur (BE), Liège (BE), Maastricht (NL) | Belgium |
+| Sava | 992 km / 97,713.2 km² | Kranj (SI), Litija (SI), Zagreb (HR), Sisak (HR) | Slovenia |
+
+Together with the nine stations of §6a-§6c that is **41 stations in 15 EU
+member states**.
+
+**One exclusion worth stating plainly.** Ljubljana, Slovenia's capital and
+by far the most recognizable city on this stretch, is **not** a station.
+The Sava's own Wikipedia article describes the river passing near
+Ljubljana via the Ljubljanica, a tributary -- not the Sava itself. This is
+the same category of exclusion already applied to Prague (on the Vltava,
+not the Elbe) and partly to Strasbourg (whose infobox coordinates are on
+the Ill, ~4 km from the Rhine): a place's fame is not evidence it sits on
+the specific river this project claims it sits on, and the project's own
+disclosure policy requires checking that claim, not assuming it.
+
+**Real governance, confirmed directly.** The Meuse: an international
+agreement signed in 2002 in Ghent, Belgium, among France, Germany,
+Luxembourg, the Netherlands and Belgium, implemented by an International
+Commission on the Meuse. The Sava: the International Sava River Basin
+Commission (ISRBC), established 2005 by Bosnia-Herzegovina, Croatia,
+Slovenia and Serbia and Montenegro, tasked with sustainable management of
+the basin's surface and groundwater. Both confirmed directly against each
+river's own Wikipedia article, not a secondary source.
+
+**What this does not change.** The Sava network only models its EU reach
+(Slovenia, Croatia); the river continues through non-EU Bosnia-Herzegovina
+and Serbia before reaching the Danube at Belgrade, and no station is
+placed there -- the same choice already made for the Danube's own non-EU
+(Serbian) reach in §6c. Both rivers use the same illustrative placeholder
+velocity (1.0 m/s) and the same optimistic straight-line distances as the
+other five large rivers, for the same reasons stated at the end of §6c.
+
+**A consequence worth naming, not hiding.** Adding these two rivers raised
+the network from 33 to 41 stations, which raised the per-station
+false-escalation target the early-warning layer's k-tick rule is derived
+against (§8 below) -- the shipped threshold moved from 5 to 6 as a direct,
+automatic result of running the same evaluation pipeline against the
+larger network, not a separate manual tuning decision. See EVALUATION.md
+§3 for the exact figures.
 
 ## 8. Statistical early-warning layer (EWMA control chart)
 
@@ -396,7 +451,7 @@ that same `flagged` state.
     (`test/ewma.test.ts` asserts fewer than 5 over 300 in-control ticks as
     a smoke check; `EVALUATION.md` §1 gives the actual measured rate: an
     in-control run averages ~496 readings between false alarms, matching
-    an independent Markov-chain calculation), and across 33 stations on a
+    an independent Markov-chain calculation), and across 41 stations on a
     ~1.2s clock a lone blip will occasionally occur. The Incident Timeline
     narrates those as "returned to normal before the escalation threshold
     -- correctly not escalated."
@@ -413,8 +468,9 @@ that same `flagged` state.
     (an inferred early-warning signal, not a direct pathogen or biohazard
     measurement)" and never claims a direct biohazard signature
     (`test/cdsHooks.test.ts`, "card provenance wording").
-  - *Characterized by simulation, not calibrated to real data.* The 5-tick
-    run length is not a guess: `EVALUATION.md` derives it by simulation as
+  - *Characterized by simulation, not calibrated to real data.* The run
+    length (6 ticks, raised from 5 when Meuse and Sava were added -- §6d)
+    is not a guess: `EVALUATION.md` derives it by simulation as
     the smallest persistence value meeting an explicit, stated
     false-escalation design target, cross-checked against an independent
     Markov-chain calculation, and shows how far that guarantee degrades

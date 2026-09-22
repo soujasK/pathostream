@@ -19,9 +19,9 @@ const MAX_ENTRIES = 60
 
 /** An out-of-control reading is only narrated once it has lasted this many
  * consecutive ticks. A single noisy tick is statistical noise, not an
- * event: with 33 stations on a ~1.2s clock they happen every few seconds
- * and would bury the real incident story. (The 5-tick auto-escalation rule
- * is separate -- see earlyWarningEngine.ts.) */
+ * event: with 41 stations on a ~1.2s clock they happen every few seconds
+ * and would bury the real incident story. (The 6-tick auto-escalation rule
+ * is separate -- see earlyWarningEngine.ts / detectorConfig.ts.) */
 const MIN_TICKS_TO_NARRATE = 2
 
 function trailingOutOfControlRun(history: EarlyWarningState['history']): number {
@@ -121,7 +121,7 @@ export function useIncidentLog(snapshots: CatchmentSnapshot[], telemetry: EarlyW
 
       if (!narrated && run >= MIN_TICKS_TO_NARRATE) {
         // "Flagged", not "sustained": the sustained claim is only made by
-        // the auto-escalation entry, after the 5-tick debounce run.
+        // the auto-escalation entry, after the 6-tick debounce run.
         additions.push({
           id: `ewma:${t.stationId}-${now}`,
           timestamp: now,

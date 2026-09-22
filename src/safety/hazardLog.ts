@@ -51,6 +51,8 @@ const CONF = "test/cdsConformance.test.ts";
 const AUTH = "test/cdsAuth.test.ts";
 const EVAL = "test/evaluation.test.ts";
 const EWS = "test/earlyWarningEngine.test.ts";
+const IOT = "test/iotIngest.test.ts";
+const GAUGE = "test/realGauges.test.ts";
 
 export const HAZARDS: Hazard[] = [
   {
@@ -67,7 +69,7 @@ export const HAZARDS: Hazard[] = [
       {
         id: "H1.1",
         description:
-          "Escalation requires k consecutive out-of-control readings; k = 5 is the smallest value meeting an explicit, stated false-escalation target, derived from a seeded simulation rather than chosen by feel.",
+          "Escalation requires k consecutive out-of-control readings; k is the smallest value meeting an explicit, stated false-escalation target, derived from a seeded simulation rather than chosen by feel -- and is re-derived (raised from 5 to 6) whenever the registered station count changes, because the target is network-wide.",
         kind: "code",
         status: "implemented",
         evidence: [
@@ -78,14 +80,16 @@ export const HAZARDS: Hazard[] = [
       {
         id: "H1.2",
         description:
-          "A baseline-adequacy gate (at least 200 readings; bounded lag-1 autocorrelation) that a real sensor feed must pass before a chart is built from it. Thresholds come from the measured behaviour in EVALUATION.md section 5.",
+          "A baseline-adequacy gate (at least 200 readings; bounded lag-1 autocorrelation) that a real sensor feed must pass before a chart is built from it. Thresholds come from the measured behaviour in EVALUATION.md section 5. Wired into the real IoT ingestion path (IOT_ARCHITECTURE.md): a device is monitored only after its own readings pass this gate, using its own measured mean/sd -- not the demo's fixed constant.",
         kind: "code",
         status: "partial",
         evidence: [
           { file: EVAL, test: "rejects a window shorter than the minimum" },
           { file: EVAL, test: "rejects a strongly autocorrelated baseline even when long" },
+          { file: IOT, test: "accumulates Phase-I readings and refuses to monitor until the baseline gate passes" },
+          { file: IOT, test: "starts monitoring once the gate passes, using THIS device's own mean/sd (not the demo's fixed constant)" },
         ],
-        gap: "Implemented and tested but NOT wired into any data path: the demo telemetry is synthetic with a known baseline. It is a coarse screen (it rejects a phi = 0.1 baseline only about a quarter of the time at n = 200).",
+        gap: "Still NOT wired into the demo's own synthetic telemetry (that stays a known, fixed baseline by construction). It IS wired into the separate, isolated IoT ingestion path -- but no physical device exists to send it real data, and the gate remains a coarse screen (it rejects a phi = 0.1 baseline only about a quarter of the time at n = 200).",
       },
       {
         id: "H1.3",
@@ -101,6 +105,23 @@ export const HAZARDS: Hazard[] = [
         kind: "code",
         status: "implemented",
         evidence: [{ file: CONF, test: "records an override with a coded reason and counts it" }],
+      },
+      {
+        id: "H1.6",
+        description:
+          "Card detail follows the published 'Five Rights of CDS' framework's right-format principle: a short primary clinical statement, separated from (not merged into) the dense transport-model methodology caveats. Found as a real defect (156 words / ~1000 characters in one undifferentiated paragraph) and fixed by a self-review against that framework -- see CLINICAL_REVIEW.md.",
+        kind: "code",
+        status: "implemented",
+        evidence: [{ file: CDS, test: "card detail is split into a short primary statement and a separate caveat paragraph (Right Format)" }],
+      },
+      {
+        id: "H1.7",
+        description:
+          "Suppressing re-display of the identical unconfirmed alert on every chart-open within one clinical encounter, so a long visit does not repeat the same card verbatim.",
+        kind: "code",
+        status: "open",
+        evidence: [],
+        gap: "Found by the CLINICAL_REVIEW.md self-review, not previously tracked. Needs a real design decision (what counts as 'the same alert' across encounters, how long suppression should last) that a clinician should make, not a developer.",
       },
       {
         id: "H1.5",
@@ -214,7 +235,7 @@ export const HAZARDS: Hazard[] = [
     harm: "A clinician does not consider waterborne exposure when it is relevant -- a missed or delayed diagnosis.",
     causes: [
       "The chart watches turbidity only: an event with no turbidity signature (for example an algal bloom, as in the 2022 Oder die-off) is invisible to it.",
-      "Persistence delays escalation of subtle shifts (about 40 readings for a 1-sigma shift at k = 5).",
+      "Persistence delays escalation of subtle shifts (tens of readings for a 1-sigma shift at the shipped k -- see EVALUATION.md section 3 for the exact figure).",
       "Monitoring stations are sparse; velocity may be under- or over-estimated.",
       "State is held in memory: a restart silently drops every flag (H7).",
     ],
@@ -374,6 +395,7 @@ export const HAZARDS: Hazard[] = [
     causes: [
       "The order-select card is network-wide, not patient-aware: its hook context carries no address.",
       "It does not check that the drafted MedicationRequest is an antimicrobial.",
+      "Independently confirmed as a 'right person' violation by the CLINICAL_REVIEW.md self-review against the published Five Rights of CDS framework, not merely an internal design note.",
     ],
     controls: [
       {
@@ -419,7 +441,68 @@ export const HAZARDS: Hazard[] = [
         evidence: [],
         manual: "Browser check of the banner and provenance panel (Playwright, 2026-09-22); not covered by a unit test.",
       },
+      {
+        id: "H11.2",
+        description:
+          "The one genuinely live, real external signal (PEGELONLINE gauge level, IOT_ARCHITECTURE.md) is visually and textually distinct from the synthetic detection status: a separate fixed-width badge, its own colour and wording ('LIVE' + cm), a hover explanation stating it is water LEVEL and is NOT part of the contamination detector -- never merged into or confused with the station's Normal/Anomaly/Escalated pill.",
+        kind: "code",
+        status: "implemented",
+        evidence: [{ file: GAUGE, test: "every match's independently-fetched gauge coordinates sit within 3 km of our own station coordinates (same reach)" }],
+        manual: "Browser check that the two badges render distinctly and neither's content collides with the station name at any reading length (Playwright, 2026-09-22).",
+      },
     ],
     residual: { level: "low", text: "Depends on the prototype being presented with its disclosures." },
+  },
+  {
+    id: "H12",
+    title: "A spoofed or compromised IoT device / external feed injects false data",
+    harm: "A fabricated device reading drives a false auto-escalation; abuse of a network-reachable endpoint that did not exist before this feature.",
+    causes: [
+      "The IoT ingestion endpoint (IOT_ARCHITECTURE.md) is, by design, reachable from outside this process -- unlike /demo, which is a same-origin dashboard convenience.",
+      "A pre-shared device key can be extracted from a compromised physical device or leaked from wherever it is stored.",
+      "The real external gauge endpoint depends on PEGELONLINE's own availability and integrity, outside this project's control.",
+    ],
+    controls: [
+      {
+        id: "H12.1",
+        description:
+          "Per-device bearer key, constant-time compared, checked against that specific device id (a key valid for one device is rejected for another); the endpoint 503s every write while unconfigured rather than defaulting open.",
+        kind: "code",
+        status: "implemented",
+        evidence: [
+          { file: IOT, test: "401s a key that is valid for a DIFFERENT device (no cross-device auth)" },
+          { file: IOT, test: "503s every write when no device keys are configured (never silently open)" },
+        ],
+      },
+      {
+        id: "H12.2",
+        description: "A device's escalation is isolated from the real per-river exposure engines and every CDS Hooks card -- a compromised device cannot, by itself, make a false alert reach a clinician.",
+        kind: "code",
+        status: "implemented",
+        evidence: [{ file: IOT, test: "ingesting under a station's own id does not flag that station in the exposure engine" }],
+      },
+      {
+        id: "H12.3",
+        description: "The real gauge endpoint fails closed: a network error or malformed upstream response is a handled 'unavailable' result, never a crash or a fabricated reading.",
+        kind: "code",
+        status: "implemented",
+        evidence: [
+          { file: GAUGE, test: "degrades to a handled failure (never throws) on an HTTP error" },
+          { file: GAUGE, test: "degrades to a handled failure on a malformed response shape" },
+        ],
+      },
+      {
+        id: "H12.4",
+        description: "Device provisioning at scale (issuing, rotating, revoking per-device keys) and a move to mutual TLS or certificate-based device identity.",
+        kind: "code",
+        status: "open",
+        evidence: [],
+        gap: "The pre-shared-key model in deviceAuth.ts is a manual, env-var-configured list -- workable for a handful of devices a developer configures by hand, not a real fleet.",
+      },
+    ],
+    residual: {
+      level: "medium",
+      text: "The blast radius of a compromised device is contained (H12.2): it can corrupt only its own isolated state, never a real alert. The blast radius of a PEGELONLINE outage or bad data is also contained (H12.3): the badge simply disappears. Neither endpoint has been through any adversarial testing beyond what these unit tests cover.",
+    },
   },
 ];

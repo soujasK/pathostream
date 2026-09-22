@@ -23,6 +23,9 @@ import {
 } from "./discovery.js";
 import type { ExposureEngine } from "./exposureEngine.js";
 import { feedbackSummary, recordFeedback } from "./feedback.js";
+import { getRealGaugeReading } from "./realGauge.js";
+import { loadDeviceRegistryFromEnv, type DeviceRegistry } from "../iot/deviceAuth.js";
+import { deviceState, ingestReading, knownDeviceIds, type DeviceReading } from "../iot/ingest.js";
 import { handleOrderSelect } from "./orderSelect.js";
 import { handlePatientView } from "./patientView.js";
 import type { OrderSelectRequest, PatientViewRequest } from "./types.js";
@@ -148,6 +151,11 @@ export interface ServerOptions {
   /** Seed for the synthetic telemetry noise, for reproducible runs. Default:
    * OAH_SEED if set, else unseeded (Math.random). */
   seed?: number | undefined;
+  /** Device registry for the IoT telemetry-ingestion endpoint (see
+   * iot/deviceAuth.ts, IOT_ARCHITECTURE.md). Omit to read it from
+   * OAH_IOT_DEVICE_KEYS; pass one explicitly (e.g. in a test) to bypass
+   * the environment. */
+  iotDevices?: DeviceRegistry | undefined;
 }
 
 export function createServer(options: ServerOptions = {}) {
@@ -156,6 +164,7 @@ export function createServer(options: ServerOptions = {}) {
   const envSeed = process.env.OAH_SEED === undefined ? undefined : Number(process.env.OAH_SEED);
   const seed = "seed" in options ? options.seed : envSeed !== undefined && Number.isFinite(envSeed) ? envSeed : undefined;
   const telemetryRng = seed === undefined ? Math.random : mulberry32(seed);
+  const iotDevices = options.iotDevices ?? loadDeviceRegistryFromEnv(process.env);
 
   const app = express();
   app.use(express.json());
@@ -217,6 +226,73 @@ export function createServer(options: ServerOptions = {}) {
   // control; protect it at the network layer in any real deployment.
   app.get("/monitoring/feedback", (_req: Request, res: Response) => {
     res.json(feedbackSummary());
+  });
+
+  // A live, real reading from an external government API (PEGELONLINE) --
+  // deliberately its own top-level path, well away from /demo, so it can
+  // never be mistaken for demo-fabricated state. Water LEVEL only; it does
+  // NOT feed the (still-synthetic) turbidity detector -- see
+  // data/realGauges.ts. Failure here (network, no match) is a normal
+  // 200-with-`available:false` response, never a 500 or a crash: this is
+  // supplementary context, and the rest of the app must work with or
+  // without it.
+  app.get("/real-gauge/:stationId", async (req: Request, res: Response) => {
+    const result = await getRealGaugeReading(String(req.params.stationId));
+    if (result.ok) {
+      res.json({ available: true, ...result.reading });
+    } else {
+      res.json({ available: false, reason: result.reason, detail: "detail" in result ? result.detail : undefined });
+    }
+  });
+
+  // --- IoT telemetry ingestion: the real, tested endpoint a physical
+  // turbidity sensor would call after its reading crosses a LoRaWAN/NB-IoT
+  // gateway (see IOT_ARCHITECTURE.md). Isolated from the demo's synthetic
+  // per-station telemetry -- an arbitrary device id, never one of the 33
+  // registered station ids, and nothing here reaches any exposure engine
+  // or CDS Hooks card. Unlike the demo routes, this is designed to be
+  // reachable from outside the process, so with no device keys configured
+  // it refuses every write (503), never silently accepts one. ---
+
+  app.get("/iot/devices", (_req: Request, res: Response) => {
+    res.json({ configured: iotDevices.isConfigured, configuredDeviceIds: iotDevices.deviceIds(), activeDeviceIds: knownDeviceIds() });
+  });
+
+  app.get("/iot/devices/:deviceId/state", (req: Request, res: Response) => {
+    const summary = deviceState(String(req.params.deviceId));
+    if (!summary) {
+      res.status(404).json({ error: "no readings received yet for this device id" });
+      return;
+    }
+    res.json(summary);
+  });
+
+  app.post("/iot/devices/:deviceId/telemetry", (req: Request, res: Response) => {
+    if (!iotDevices.isConfigured) {
+      res.status(503).json({ error: "IoT ingestion is not configured (set OAH_IOT_DEVICE_KEYS)" });
+      return;
+    }
+    const deviceId = String(req.params.deviceId);
+    const authorization = req.headers.authorization;
+    if (!authorization?.startsWith("Bearer ") || !iotDevices.verify(deviceId, authorization.slice("Bearer ".length))) {
+      res.setHeader("WWW-Authenticate", 'Bearer error="invalid_token"');
+      res.status(401).json({ error: "invalid or missing device key" });
+      return;
+    }
+    const body = req.body as Partial<DeviceReading>;
+    if (typeof body.measuredAt !== "string" || typeof body.ntu !== "number") {
+      res.status(400).json({ error: "body must include measuredAt (ISO 8601 string) and ntu (number)" });
+      return;
+    }
+    const reading: DeviceReading = { measuredAt: body.measuredAt, ntu: body.ntu };
+    if (typeof body.batteryVolts === "number") reading.batteryVolts = body.batteryVolts;
+    if (typeof body.rssiDbm === "number") reading.rssiDbm = body.rssiDbm;
+    const result = ingestReading(deviceId, reading);
+    if (!result.ok) {
+      res.status(422).json({ error: result.error });
+      return;
+    }
+    res.status(201).json(result);
   });
 
   // --- Demo-only scaffolding: real backend state a demo frontend can

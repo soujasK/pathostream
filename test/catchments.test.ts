@@ -53,8 +53,8 @@ beforeEach(() => {
 });
 
 describe("catchment registry integrity", () => {
-  it("registers Mondego, Douro, Tagus, Danube, Rhine, Elbe and Oder", () => {
-    expect(CATCHMENTS.map((c) => c.id)).toEqual(["mondego", "douro", "tagus", "danube", "rhine", "elbe", "oder"]);
+  it("registers Mondego, Douro, Tagus, Danube, Rhine, Elbe, Oder, Meuse and Sava", () => {
+    expect(CATCHMENTS.map((c) => c.id)).toEqual(["mondego", "douro", "tagus", "danube", "rhine", "elbe", "oder", "meuse", "sava"]);
   });
 
   it("has no duplicate station ids across rivers", () => {
@@ -62,8 +62,8 @@ describe("catchment registry integrity", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("covers 13 EU member states", () => {
-    expect(COUNTRIES_COVERED).toEqual(["AT", "BG", "CZ", "DE", "ES", "FR", "HR", "HU", "NL", "PL", "PT", "RO", "SK"]);
+  it("covers 15 EU member states", () => {
+    expect(COUNTRIES_COVERED).toEqual(["AT", "BE", "BG", "CZ", "DE", "ES", "FR", "HR", "HU", "NL", "PL", "PT", "RO", "SI", "SK"]);
   });
 
   it.each(CATCHMENTS.map((c) => [c.id, c] as const))("%s: flow order matches its stations and every station is verified", (_id, c) => {
@@ -151,7 +151,7 @@ describe("HTTP: every river gets the same route family", () => {
     const res = await request(app).get("/demo/catchments");
     expect(res.status).toBe(200);
     expect(res.body.catchments).toHaveLength(CATCHMENTS.length);
-    expect(res.body.countriesCovered).toHaveLength(13);
+    expect(res.body.countriesCovered).toHaveLength(15);
     const danube = res.body.catchments.find((c: { id: string }) => c.id === "danube");
     expect(danube.stationCount).toBe(7);
     expect(danube.provenance.length).toBeGreaterThan(0);

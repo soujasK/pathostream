@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import type { EarlyWarningState, NetworkStation, StationState } from '../../api/types'
 import { EwmaSparkline } from './EwmaSparkline'
+import { RealGaugeBadge } from './RealGaugeBadge'
 
 interface StationsPanelProps {
   stations: NetworkStation[]
@@ -90,13 +91,19 @@ export function StationsPanel({
               >
                 {status.label}
               </span>
-              {/* Own row on phones (so the name isn't squeezed), inline on desktop. */}
-              <div className="flex basis-full items-center gap-3 pl-5 sm:basis-auto sm:pl-0">
+              {/* Always its own row (not just on phones): a fixed-width sibling
+                  set can still vary in total width (the live-gauge badge's
+                  text length depends on the server's number), and letting
+                  that share a row with the flex-1 name would squeeze it
+                  unpredictably. A dedicated row means the name's width never
+                  depends on what a live external reading happens to say. */}
+              <div className="flex basis-full items-center gap-3 pl-5">
+                <RealGaugeBadge stationId={station.id} />
                 <EwmaSparkline history={t?.history ?? []} width={84} height={28} />
                 <button
                   type="button"
                   onClick={() => (t?.eventInjected ? onClear(station.id) : onInject(station.id))}
-                  title="Test: simulate a rising-turbidity trend here. The EWMA detector notices it and auto-escalates after 5 consecutive out-of-control readings."
+                  title="Test: simulate a rising-turbidity trend here. The EWMA detector notices it and auto-escalates after 6 consecutive out-of-control readings."
                   className={clsx(BUTTON, 'w-[104px]', t?.eventInjected ? BUTTON_ACTIVE : BUTTON_IDLE)}
                 >
                   {t?.eventInjected ? 'Stop anomaly' : 'Inject anomaly'}

@@ -11,8 +11,10 @@ import { DANUBE_CATCHMENT } from "./danubeNetwork.js";
 import { ELBE_CATCHMENT } from "./elbeNetwork.js";
 import { CHUC_ANCHOR, MONDEGO_CATCHMENT_ID, MONDEGO_FLOW_ORDER, MONDEGO_STATIONS } from "./mondegoNetwork.js";
 import { type CatchmentDefinition, type CountryCode, type NetworkStation, STRAIGHT_LINE_DISTANCE_ROW } from "./networkTypes.js";
+import { MEUSE_CATCHMENT } from "./meuseNetwork.js";
 import { ODER_CATCHMENT } from "./oderNetwork.js";
 import { RHINE_CATCHMENT } from "./rhineNetwork.js";
+import { SAVA_CATCHMENT } from "./savaNetwork.js";
 import { TAGUS_CATCHMENT } from "./tagusNetwork.js";
 
 const MONDEGO_CATCHMENT: CatchmentDefinition = {
@@ -77,6 +79,8 @@ export const CATCHMENTS: CatchmentDefinition[] = [
   RHINE_CATCHMENT,
   ELBE_CATCHMENT,
   ODER_CATCHMENT,
+  MEUSE_CATCHMENT,
+  SAVA_CATCHMENT,
 ];
 
 export const ALL_STATIONS: NetworkStation[] = CATCHMENTS.flatMap((c) => c.stations);

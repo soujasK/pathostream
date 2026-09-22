@@ -156,6 +156,36 @@ describe("POST /cds-services/patient-view", () => {
     expect(res.body.cards[0].detail).toContain(SOURCE.name);
   });
 
+  // CLINICAL_REVIEW.md ("Right Format"): the actionable clinical statement
+  // must stay short and separated from the dense transport-model caveats,
+  // not run together into one wall of text -- pinned so a future edit can't
+  // silently regress it back to a single undifferentiated paragraph.
+  describe("card detail is split into a short primary statement and a separate caveat paragraph (Right Format)", () => {
+    it("on the predicted (downstream) card", async () => {
+      await request(app).post("/demo/simulate").send({ stationId: SOURCE.id, flagged: true, severityIndex: 0.9 });
+      const res = await request(app).post("/cds-services/patient-view").send(patientViewRequest(TARGET.latitude, TARGET.longitude));
+      const detail: string = res.body.cards[0].detail;
+      const [primary, caveats] = detail.split("\n\n");
+      expect(caveats, "detail should contain exactly one blank-line paragraph break").toBeDefined();
+      expect(primary!.split(/\s+/).length).toBeLessThan(60);
+      expect(primary).toContain("not a confirmed exposure");
+      expect(caveats).toMatch(/^\*.*\*$/s); // the caveat paragraph is GFM-italicized
+      expect(caveats).toContain("sensitivity range, not a calibrated interval");
+    });
+
+    it("on the confirmed (own-flag) card", async () => {
+      await request(app).post("/demo/simulate").send({ stationId: TARGET.id, flagged: true, severityIndex: 0.9 });
+      const res = await request(app).post("/cds-services/patient-view").send(patientViewRequest(TARGET.latitude, TARGET.longitude));
+      const detail: string = res.body.cards[0].detail;
+      const [primary, caveats] = detail.split("\n\n");
+      expect(caveats).toBeDefined();
+      expect(primary!.split(/\s+/).length).toBeLessThan(40);
+      expect(primary).toContain("do not delay empiric therapy");
+      expect(caveats).toMatch(/^\*.*\*$/s);
+      expect(caveats).toContain("Indicative WFD ecological status");
+    });
+  });
+
   it("does not fire a card for a station upstream of the only flagged station", async () => {
     await request(app).post("/demo/simulate").send({ stationId: TARGET.id, flagged: true, severityIndex: 0.9 });
     const res = await request(app).post("/cds-services/patient-view").send(patientViewRequest(SOURCE.latitude, SOURCE.longitude));

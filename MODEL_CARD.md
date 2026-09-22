@@ -10,7 +10,7 @@ There is **no learned model**. The system is three fixed-rule components:
 
 | Component | What it is | Parameters |
 | --- | --- | --- |
-| Early-warning detector | Two-sided EWMA control chart (Roberts 1959, *Technometrics* 1(3):239-250) with exact time-varying limits, followed by an escalation rule | lambda = 0.25, L = 3; escalate after **5** consecutive out-of-control readings; inferred severity 0.7 |
+| Early-warning detector | Two-sided EWMA control chart (Roberts 1959, *Technometrics* 1(3):239-250) with exact time-varying limits, followed by an escalation rule | lambda = 0.25, L = 3; escalate after **6** consecutive out-of-control readings; inferred severity 0.7 |
 | Transport forecast | 1D advection-dispersion, Taylor-dispersion closed form; Gaussian-CDF arrival probability; a sensitivity band on the ETA | Per-river mean velocity (placeholder, e.g. 0.36 m/s Mondego, 1.0 m/s large rivers) and a flat dispersion coefficient; band assumes velocity log-sd 0.5 |
 | Exposure and card logic | Deterministic rules producing FHIR R4 `RiskAssessment` resources and CDS Hooks cards | 2 km station-proximity radius |
 
@@ -24,7 +24,7 @@ Version 0.1.0 (repository `oah-mondego`, shown in the interface as "OAH River Wa
 
 ## Factors
 
-- **Environmental:** river (7 modelled, 33 stations in 13 EU member states), reach length and velocity, flow regime (not modelled), season (not modelled), and event type -- the detector sees only events that move turbidity.
+- **Environmental:** river (7 modelled, 41 stations in 13 EU member states), reach length and velocity, flow regime (not modelled), season (not modelled), and event type -- the detector sees only events that move turbidity.
 - **Data properties the detector is sensitive to:** independence of readings, noise level relative to the assumed baseline, distribution shape, and the sampling interval (assumed 15 minutes for calendar-time conversions).
 - **Population factors.** No patient attribute is used except a recorded address. That is itself the fairness-relevant factor: **people without a recorded, geocodable address, and people who live outside the 2 km radius of a monitored station, are systematically not covered**, however exposed they may be. Coverage follows where stations exist, which is not necessarily where risk or vulnerability is highest. No demographic breakdown of performance was possible or attempted.
 
@@ -53,8 +53,8 @@ Full tables and method in EVALUATION.md. Headlines (simulation only):
 
 - **Correct implementation:** Markov-chain and Monte Carlo agree; production-class ARL0 = 495.7 readings.
 - **Detection speed:** mean readings to detect a 1-sigma shift: EWMA 10.4, CUSUM 10.4, Shewhart 54.2 (all at equal false-alarm rate). A 15-sigma shift -- the demo's injected event -- is caught on the first reading by all three.
-- **Escalation rule (k = 5):** about 121,256 readings between false escalations per station under ideal assumptions; escalates a large event after 5.0 readings and a subtle 1-sigma shift after 40.2.
-- **Fragility:** that interval falls to about 1,257 readings if the true noise is 1.5x the assumed value, and to about 51 readings under strong autocorrelation (phi = 0.9).
+- **Escalation rule (k = 6):** about 467,674 readings between false escalations per station under ideal assumptions; escalates a large event after 6.0 readings and a subtle 1-sigma shift after 52.6.
+- **Fragility:** that interval falls to about 2,808 readings if the true noise is 1.5x the assumed value, and to about 61 readings under strong autocorrelation (phi = 0.9).
 - **Baseline estimation:** a chart built from 20 readings false-alarms within 50 readings 29% of the time versus 10% at 1000.
 
 ## Ethical considerations
@@ -81,7 +81,7 @@ Full tables and method in EVALUATION.md. Headlines (simulation only):
 Format after Gebru et al., *Datasheets for Datasets* (Communications of the ACM 64(12):86-92, 2021).
 
 - **Motivation.** Give the detector something to detect without real sensors, so the pipeline can be demonstrated. Not created to represent any real river.
-- **Composition.** A stream of one number per station per tick: turbidity in NTU, Gaussian noise (mean 15, sd 3) clipped at zero and rounded to 0.1. An injected event adds +45 NTU from the next tick. 33 stations. No personal or sensitive data.
+- **Composition.** A stream of one number per station per tick: turbidity in NTU, Gaussian noise (mean 15, sd 3) clipped at zero and rounded to 0.1. An injected event adds +45 NTU from the next tick. 41 stations. No personal or sensitive data.
 - **Collection.** Generated on demand (Box-Muller transform over `Math.random`); reproducible when the server is started with `OAH_SEED`. No human subjects, no scraping.
 - **Preprocessing.** None beyond clipping and rounding.
 - **Uses.** Demonstrating and unit-testing the detector. **Not** suitable for estimating real-world detection performance.

@@ -99,6 +99,15 @@ export function handlePatientView(request: PatientViewRequest): CdsHookResponse 
         `whether waterborne exposure is relevant, per ${protocol}.`
       : `Consider empiric waterborne-exposure workup per ${protocol}; ` +
         "do not delay empiric therapy awaiting confirmatory testing.";
+    // CDS Hooks 2.0 detail MUST be GFM Markdown -- used here to separate the
+    // primary, actionable clinical statement (what happened, what to do)
+    // from the methodology caveat that follows it, rather than running both
+    // into one undifferentiated paragraph. A real clinician was never
+    // available to review this design (SAFETY_CASE.md is explicit about
+    // that); this specific change follows the published "Five Rights of
+    // Clinical Decision Support" framework's "right format" -- see
+    // CLINICAL_REVIEW.md, which measured the previous single-paragraph
+    // detail at ~1000 characters on the predicted-card path below.
     const card: Card = {
       uuid: randomUUID(),
       summary: inferred
@@ -106,8 +115,8 @@ export function handlePatientView(request: PatientViewRequest): CdsHookResponse 
         : "Active waterborne biohazard exposure window for this address",
       indicator: inferred ? "warning" : "critical",
       detail:
-        `${lead} (elapsed ~${evaluation.elapsedMinutes.toFixed(0)} min). Indicative WFD ecological status: ` +
-        `${evaluation.wfd.eqrClass} (EQR ${evaluation.wfd.indicativeEqr}). ${closing}`,
+        `${lead} (elapsed ~${evaluation.elapsedMinutes.toFixed(0)} min). ${closing}\n\n` +
+        `*Indicative WFD ecological status: ${evaluation.wfd.eqrClass} (EQR ${evaluation.wfd.indicativeEqr}). ${evaluation.wfd.note}*`,
       source: { label: `${sourceLabel} (deterministic exposure-window rule)` },
       suggestions:
         inferred || !patientId
@@ -142,22 +151,26 @@ export function handlePatientView(request: PatientViewRequest): CdsHookResponse 
   const forecast = evaluation.forecast!;
   const band = travelTimeBand(forecast.peakTimeMinutes);
   const sourceStation = catchment.stations.find((s) => s.id === evaluation.sourceStationId)!;
+  // Same GFM-Markdown paragraph split as the confirmed-card path above: a
+  // short, primary clinical statement first, the transport-model
+  // methodology and its caveats (the bulk of the text -- this path
+  // previously ran to ~1000 characters in one paragraph) set apart second.
+  const primary =
+    `${sourceStation.name} ${describeFlag(engine.getStationState(evaluation.sourceStationId).confirmedVia)}. The contamination front is predicted ` +
+    `to reach ${station.name} in an estimated ${forecast.arrivalTimeMinutes.toFixed(0)}-${forecast.clearanceTimeMinutes.toFixed(0)} minutes ` +
+    `(peak ~${forecast.peakTimeMinutes.toFixed(0)} min). No local confirmation yet -- this is a precautionary early-warning, not a confirmed exposure.`;
+  const methodology =
+    `*1D advection-dispersion transport model (Taylor-dispersion approximation; ${forecast.distanceKm.toFixed(2)} km straight-line at an assumed ` +
+    `${catchment.meanVelocityMs} m/s mean velocity -- illustrative, not a calibrated gauge reading). If the assumed velocity is off by a factor of ` +
+    `about ${bandFactor().toFixed(0)} either way the peak could fall anywhere from ${band.lowMinutes.toFixed(0)} to ${band.highMinutes.toFixed(0)} ` +
+    `min -- a sensitivity range, not a calibrated interval. Modeled chance the front has ALREADY reached this station: ` +
+    `${Math.round(evaluation.probability * 100)}% (this starts near 0% and rises as the window approaches -- it is not the chance the contamination ` +
+    `reaches you at all). Indicative WFD ecological status if unmitigated: ${evaluation.wfd.eqrClass} (${evaluation.wfd.note})*`;
   const card: Card = {
     uuid: randomUUID(),
     summary: "Upstream waterborne contamination predicted to reach this address soon",
     indicator: "warning",
-    detail:
-      `${sourceStation.name} ${describeFlag(engine.getStationState(evaluation.sourceStationId).confirmedVia)}. A 1D advection-dispersion transport ` +
-      `model (Taylor-dispersion approximation; ${forecast.distanceKm.toFixed(2)} km straight-line at an assumed ${catchment.meanVelocityMs} m/s mean ` +
-      `velocity -- illustrative, not a calibrated gauge reading) predicts the contamination front will reach ` +
-      `${station.name} in an estimated ${forecast.arrivalTimeMinutes.toFixed(0)}-${forecast.clearanceTimeMinutes.toFixed(0)} ` +
-      `minutes (peak ~${forecast.peakTimeMinutes.toFixed(0)} min, but if the assumed velocity is off by a factor of ` +
-      `about ${bandFactor().toFixed(0)} either way the peak could fall anywhere from ${band.lowMinutes.toFixed(0)} to ` +
-      `${band.highMinutes.toFixed(0)} min -- a sensitivity range, not a calibrated interval); modeled chance the front has ALREADY reached this ` +
-      `station: ${Math.round(evaluation.probability * 100)}% (this starts near 0% and rises as the window approaches -- ` +
-      `it is not the chance the contamination reaches you at all). Indicative WFD ecological status if unmitigated: ${evaluation.wfd.eqrClass} ` +
-      `(${evaluation.wfd.note}). No local confirmation yet -- this is a precautionary early-warning, not a confirmed ` +
-      "exposure.",
+    detail: `${primary}\n\n${methodology}`,
     source: { label: `${sourceLabel} (downstream propagation forecast, deterministic)` },
     suggestions: [],
     overrideReasons: overrideReasons(),

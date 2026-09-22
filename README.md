@@ -30,14 +30,16 @@ How, in five steps (all of it runs in the demo):
    and a warning card appears, suggesting a stool test so antibiotics
    aren't guessed blindly.
 
-It covers **7 real rivers, 33 stations and 13 EU member states**. What it
+It covers **9 real rivers, 41 stations and 15 EU member states**. What it
 proves is not a new sensor or a new hydrology model -- it's that the pipe
 from river data to a doctor's screen can be built *today* from standards
 that already exist.
 
 **Real vs. fake.** Real: the algorithms, the data formats, the places and
 the citations. Fake: the sensor readings, the river speeds, and any
-connection to a real hospital.
+connection to a real hospital. (One partial exception: 5 German stations
+also show a genuinely live water-*level* reading from a real government
+API -- see "A real, live data source" below.)
 
 ### Rivers covered
 
@@ -50,10 +52,35 @@ connection to a real hospital.
 | Rhine | France, Germany, Netherlands (4) | ICPR International Warning and Alarm Plan Rhine |
 | Elbe | Czechia, Germany (4) | ICPER warning and alarm plan; ALAMO spread model |
 | Oder | Poland, Germany border (4) | The real 2022 fish die-off -- a cross-border warning failure |
+| Meuse | France, Belgium, Netherlands (4) | International Commission on the Meuse, 2002 Ghent Agreement |
+| Sava | Slovenia, Croatia (4) | International Sava River Basin Commission, 2005 |
+
+Meuse and Sava were added specifically to bring Belgium and Slovenia into
+the EU coverage (still 15 of 27 member states, not all of them -- several,
+especially the Nordic/Baltic states and the small states with no
+comparable cross-border river, remain uncovered by design of the
+"river crosses a border" pattern this project uses).
 
 Every station is a real place whose coordinates were fetched from its own
 public infobox; every river's sourcing and caveats are listed in "What's
 verified vs illustrative" below and shown in the dashboard.
+
+### A real, live data source (water level, not turbidity)
+
+Checked directly, not assumed: **no public real-time turbidity API exists
+anywhere in Europe.** Real-time river *level* data does, though --
+Germany's PEGELONLINE (Wasserstraßen- und Schifffahrtsverwaltung des
+Bundes), a real government REST API, no authentication required, licensed
+DL-DE->Zero-2.0. Five of this project's German stations (Rhine's Mainz;
+Elbe's Dresden, Magdeburg, Hamburg; Oder's Frankfurt (Oder)) are matched
+to a real federal gauge within ~2 km, and the dashboard shows that live
+reading in a small, deliberately distinct "LIVE" badge next to those
+stations. **It is water level, not turbidity, and does not feed the
+detector** -- it exists purely as honest, live, real-world context. See
+`src/data/realGauges.ts` and `IOT_ARCHITECTURE.md` (which documents the
+real path -- a published open-source turbidity sensor, LoRaWAN/NB-IoT,
+this project's own tested ingestion endpoint -- that would be needed to
+get a real *contamination* signal, since none exists as public data today).
 
 ### How it works, technically
 
@@ -149,7 +176,7 @@ on. The prototype models the whole chain:
    control chart (Roberts 1959) continuously monitors each station's live,
    noisy telemetry and flags a *sustained drift* -- not a hand-toggled
    switch or a single-sample threshold.
-2. **Escalation**: a station that stays out of control for **5 consecutive
+2. **Escalation**: a station that stays out of control for **6 consecutive
    ticks** (`ESCALATION_THRESHOLD_TICKS`) is auto-escalated to a confirmed
    exposure in its own network's exposure engine. A single noisy blip is
    deliberately *not* escalated -- the Incident Timeline shows those as
@@ -173,7 +200,7 @@ inferred early-warning signal, not a direct pathogen or biohazard
 measurement)" rather than claiming a direct biohazard signature. An
 operator's report is the only thing described as an observed signature.
 
-**What this rule is and isn't.** 5 ticks is not a guess: it's the smallest
+**What this rule is and isn't.** 6 ticks is not a guess: it's the smallest
 persistence value whose simulated false-escalation rate meets an explicit,
 stated design target (derived by a seeded Monte Carlo / Markov-chain
 evaluation, cross-checked two independent ways) -- see **`EVALUATION.md`**
@@ -225,8 +252,8 @@ Every river, and the statistical early-warning layer, feed the dashboard's
 **Incident Timeline** tab -- a single, plain-language, chronological
 narrative derived by diffing the same real polled state (see
 `web/src/hooks/useIncidentLog.ts`). One noisy out-of-control tick is
-deliberately *not* narrated (with 33 stations they occur every few
-seconds); an anomaly appears once it lasts 2 ticks, and escalates at 5.
+deliberately *not* narrated (with 41 stations they occur every few
+seconds); an anomaly appears once it lasts 2 ticks, and escalates at 6.
 
 ## What's verified vs illustrative
 
@@ -256,7 +283,7 @@ seconds); an anomaly appears once it lasts 2 ticks, and escalates at 5.
 | OneAquaHealth is a real, active EUR 4.9M Horizon Europe project coordinated by the University of Coimbra | **Verified** directly against its official CORDIS project page (grant 101086521). See `METHODS.md` §6b. |
 | EWMA control chart (Roberts 1959) for statistical early-warning detection | **Real, independently confirmed** citation and formula; correctly implemented with exact (not asymptotic-only) time-varying control limits and independently tested. See `METHODS.md` §8. |
 | The early-warning layer's telemetry reflects real Mondego sensor readings | **No.** Synthetic Gaussian noise around a documented illustrative baseline (15±3 NTU) — see `METHODS.md` §8. The *algorithm* is real; the *data it's fed* is not. |
-| The auto-escalation rule (5 consecutive out-of-control ticks -> confirmed at fixed severity 0.7) | **Characterized, not calibrated to real data.** 5 is the smallest persistence value meeting an explicit, stated false-escalation design target, derived by simulation and checked two independent ways (Monte Carlo + Markov chain) — see `EVALUATION.md`. That guarantee assumes independent, correctly-scaled Gaussian noise; `EVALUATION.md` §4 shows it collapsing by up to three orders of magnitude when that assumption fails, which is why the alert it produces is shown to a clinician as unconfirmed, never as a confirmed exposure (`SAFETY_CASE.md` H2). It is not calibrated against any real river's telemetry — none exists here. |
+| The auto-escalation rule (6 consecutive out-of-control ticks -> confirmed at fixed severity 0.7) | **Characterized, not calibrated to real data.** 6 is the smallest persistence value meeting an explicit, stated network-wide false-escalation design target for the current 41-station network (raised from 5 when Meuse and Sava were added, since the target scales with station count), derived by simulation and checked two independent ways (Monte Carlo + Markov chain) — see `EVALUATION.md`. That guarantee assumes independent, correctly-scaled Gaussian noise; `EVALUATION.md` §4 shows it collapsing by up to three orders of magnitude when that assumption fails, which is why the alert it produces is shown to a clinician as unconfirmed, never as a confirmed exposure (`SAFETY_CASE.md` H2). It is not calibrated against any real river's telemetry — none exists here. |
 | The peak-ETA sensitivity band shown on every forecast (API, card text, FHIR rationale, dashboard) | **An assumption, not a calibrated prediction interval.** Assumes the placeholder mean velocity is log-normal with log-sd 0.5 (about a factor of two either way); the closed-form band is checked against an independent Monte Carlo simulation of the same assumption in `test/uncertainty.test.ts`. It quantifies sensitivity to the placeholder, not real-world accuracy. See `src/hydrology/uncertainty.ts`. |
 | GDPR Article 9 / EU Health Data Space (Reg. (EU) 2025/327) compliance | **Not implemented.** Both are real, verified, currently-relevant EU instruments, named and discussed honestly as an acknowledged gap, not implemented or claimed. See `METHODS.md` §9. |
 | Douro (897 km) / Duero is the largest Iberian river basin, Spain to the Atlantic at Porto | **Verified** against the river's own Wikipedia infobox, fetched directly. |
@@ -291,13 +318,17 @@ seconds); an anomaly appears once it lasts 2 ticks, and escalates at 5.
 │   │   ├── danubeNetwork.ts         7-station Danube (Passau -> Galati, 7 EU states)
 │   │   ├── rhineNetwork.ts          4-station Rhine (Strasbourg -> Lobith)
 │   │   ├── elbeNetwork.ts           4-station Elbe (Usti nad Labem -> Hamburg)
-│   │   └── oderNetwork.ts           4-station Oder (Opole -> Szczecin)
+│   │   ├── oderNetwork.ts           4-station Oder (Opole -> Szczecin)
+│   │   ├── meuseNetwork.ts          4-station Meuse (Charleville-Mezieres -> Maastricht; adds Belgium)
+│   │   ├── savaNetwork.ts           4-station Sava (Kranj -> Sisak; adds Slovenia)
+│   │   └── realGauges.ts            5 German stations matched to a REAL live gauge (PEGELONLINE) -- water level only, does not feed the detector
 │   ├── analytics/
 │   │   ├── ewma.ts                  real EWMA statistical process control chart (Roberts 1959)
 │   │   ├── telemetryStream.ts       synthetic noisy per-station turbidity signal
 │   │   ├── detectorConfig.ts        the detector's design constants -- the ONE place the production engine and the offline evaluation both read, so EVALUATION.md can't describe a different detector than the one that ships
-│   │   ├── baseline.ts              Phase-I baseline-adequacy gate (n >= 200, bounded autocorrelation) for a real sensor feed -- not wired into the synthetic demo telemetry
+│   │   ├── baseline.ts              Phase-I baseline-adequacy gate (n >= 200, bounded autocorrelation) for a real sensor feed -- wired into the real IoT ingestion path (iot/ingest.ts), not into the synthetic demo telemetry
 │   │   └── earlyWarningEngine.ts    wires the above into per-station early-warning state (every river) and auto-escalates sustained anomalies into that river's exposure engine
+│   ├── iot/                         real, tested telemetry-ingestion endpoint a physical sensor could call -- isolated from the demo; see IOT_ARCHITECTURE.md
 │   ├── evaluation/                  offline detector characterization (Monte Carlo + Markov chain), seeded and reproducible -- renders EVALUATION.md and MODEL_CARD.md; see `npm run evaluate`
 │   ├── safety/                      hazardLog.ts (data) + render.ts -- renders SAFETY_CASE.md; see `npm run safety-case`
 │   ├── hydrology/
@@ -324,12 +355,15 @@ seconds); an anomaly appears once it lasts 2 ticks, and escalates at 5.
 │       ├── discovery.ts             /cds-services manifest (real, dereferenceable service ids)
 │       ├── feedback.ts              CDS Hooks `/feedback` endpoint (accepted/overridden outcomes, override reasons; free text never stored)
 │       ├── auth.ts                  CDS Hooks JWT authentication (spec 2.0 "Security and Safety"); off by default
-│       └── server.ts                Express app; registers one route family per registry entry (+ /demo/catchments, /monitoring/feedback)
-├── test/                            288 tests across 17 files: hydrology math, PDE validation, FHIR shape + official-validator-matched conformance, CDS Hooks (card provenance, feedback, auth), exposure phases, EWMA/telemetry/auto-escalation, the detector evaluation and safety-case traceability, and the river registry
+│       ├── realGauge.ts             fetches the live PEGELONLINE reading (timeout, cache, graceful degradation)
+│       └── server.ts                Express app; registers one route family per registry entry (+ /demo/catchments, /monitoring/feedback, /real-gauge, /iot)
+├── test/                            multiple hundred tests: hydrology math, PDE validation, FHIR shape + official-validator-matched conformance, CDS Hooks (card provenance, feedback, auth), exposure phases, EWMA/telemetry/auto-escalation, the detector evaluation and safety-case traceability, the real-gauge and IoT-ingestion pipelines, and the river registry -- see `npm test` for the current count
 ├── scripts/                         evaluate.ts / renderEvaluation.ts / renderSafetyCase.ts / exportFhirSamples.ts -- regenerate the four generated documents below
 ├── web/                             React + Vite + Tailwind + MapLibre dashboard (3 views; a Europe coverage map; everything river-specific comes from /demo/catchments)
 ├── conformance/                     FHIR samples + the official-validator findings (README.md)
 ├── evaluation/                      results.json backing EVALUATION.md and MODEL_CARD.md (seeded, reproducible)
+├── IOT_ARCHITECTURE.md              the real path from a physical sensor to this detector -- what's real (a published sensor, standard protocols, the tested ingestion endpoint) and what's a design, not a deployment
+├── CLINICAL_REVIEW.md               a self-critique of the CDS cards against the published "Five Rights of CDS" framework -- not a substitute for a real clinician review
 ├── EVALUATION.md                    detector evidence: ARL0/ARL1, comparison with CUSUM/Shewhart, the escalation rule's false-alarm rate and how it degrades, baseline-estimation behaviour
 ├── SAFETY_CASE.md                   intended use, EU MDR/AI Act self-assessment, an 11-hazard ISO-14971-style log with test-backed traceability
 ├── MODEL_CARD.md                    Mitchell et al.-format model card + a datasheet for the synthetic telemetry
@@ -342,7 +376,7 @@ seconds); an anomaly appears once it lasts 2 ticks, and escalates at 5.
 ```bash
 npm install
 npm run dev     # API on http://127.0.0.1:4300, auto-reload
-npm test        # 288 tests
+npm test        # see the printed summary for the current count
 npm run build   # tsc -> dist/
 
 # Dashboard (separate terminal, needs the API running above)
@@ -384,7 +418,7 @@ it ticks its own live clock client-side (~1.2s/sample) against
 `/demo/telemetry/tick`, and "Test: simulate rising turbidity" starts a
 sustained synthetic contamination drift at that station's synthetic sensor
 from the *next* tick onward -- watch the badge go "In control" -> "Anomaly
-detected" -> (after 5 consecutive ticks) "Escalated -> confirmed", in real
+detected" -> (after 6 consecutive ticks) "Escalated -> confirmed", in real
 time, with no manual report. Switch to the **Incident Timeline** tab to see
 every one of these real state changes, from any river, narrated in plain
 language as they happen (see "One causal chain" above). Each river's Reset
@@ -417,7 +451,7 @@ curl http://127.0.0.1:4300/demo/danube/state
 
 # Statistical early-warning layer: inject a synthetic anomaly at a station
 # on ANY river, then advance the shared telemetry clock a few times and
-# watch outOfControl flip to true (and, after 5 ticks, auto-escalate)
+# watch outOfControl flip to true (and, after 6 ticks, auto-escalate)
 curl -X POST http://127.0.0.1:4300/demo/telemetry/inject \
   -H "Content-Type: application/json" -d '{"stationId":"NL-LOBITH"}'
 curl -X POST http://127.0.0.1:4300/demo/telemetry/tick
@@ -482,7 +516,7 @@ each *is* handled and exactly what is missing for each that isn't -- is
   arrival times are optimistic -- most visibly on the Danube, where
   Vukovar -> Ruse runs through non-EU Serbia and the real river path is far
   longer than the straight line.
-- The auto-escalation rule (5 consecutive out-of-control ticks, fixed 0.7
+- The auto-escalation rule (6 consecutive out-of-control ticks, fixed 0.7
   severity) **is** now characterized as a formal average run length, with
   its degradation under wrong assumptions quantified -- see `EVALUATION.md`
   -- but that characterization is simulation-only: it is not calibrated

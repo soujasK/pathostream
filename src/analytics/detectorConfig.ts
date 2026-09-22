@@ -16,8 +16,14 @@ export const EWMA_L = 3;
 /** A station must be statistically out-of-control for this many
  * *consecutive* ticks before it is auto-escalated to a confirmed exposure.
  * Chosen from the measured trade-off in EVALUATION.md (false-escalation
- * rate vs detection delay), not by intuition. */
-export const ESCALATION_THRESHOLD_TICKS = 5;
+ * rate vs detection delay), not by intuition -- specifically, the smallest
+ * value whose simulated false-escalation interval meets an explicit,
+ * stated network-wide target (EVALUATION.md section 3). That target scales
+ * with the number of registered stations, so this constant was raised from
+ * 5 to 6 when the network grew from 33 to 41 stations (Meuse, Sava added)
+ * -- re-run `npm run evaluate` and re-check EVALUATION.md section 7 after
+ * changing the station count, not just after changing this constant. */
+export const ESCALATION_THRESHOLD_TICKS = 6;
 
 /** Severity assigned to an auto-escalated confirmation -- a fixed,
  * documented value distinct from an operator's default 0.9 (a human

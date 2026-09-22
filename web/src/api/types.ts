@@ -14,6 +14,24 @@ export interface NetworkStation {
   country?: string
 }
 
+/** GET /real-gauge/:stationId -- a live reading from a real government API
+ * (Germany's PEGELONLINE), when this station has one. Water LEVEL only;
+ * unrelated to and never feeds the (still-synthetic) contamination
+ * detector -- see src/data/realGauges.ts. */
+export type RealGaugeResponse =
+  | {
+      available: true
+      stationId: string
+      gaugeName: string
+      waterLevelCm: number
+      stateMnwMhw: string | null
+      measuredAt: string
+      fetchedAt: string
+      source: string
+      licence: string
+    }
+  | { available: false; reason: 'no-match' | 'fetch-failed'; detail?: string }
+
 export interface ProvenanceRow {
   claim: string
   status: 'verified' | 'illustrative'

@@ -77,7 +77,7 @@ export const SHIFTS_SIGMA = [0.5, 1, 1.5, 2, 3, 5, 15];
 export const PERSISTENCE_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 10];
 export const ESCALATION_DELAY_SHIFTS = [1, 2, 3, 15];
 /** Stations in the shipped network (data/catchments.ts) -- asserted equal by a test. */
-export const NETWORK_STATIONS = 33;
+export const NETWORK_STATIONS = 41;
 
 // ---- Experiment 1: theory vs simulation --------------------------------
 

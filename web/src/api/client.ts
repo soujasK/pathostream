@@ -5,6 +5,7 @@ import type {
   DemoStateResponse,
   DemoTelemetryResponse,
   NetworkStation,
+  RealGaugeResponse,
   StationState,
 } from './types'
 
@@ -91,4 +92,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(buildPatientViewRequest(station)),
     }),
+  // Not catchment-scoped and not under /demo -- a real external reading,
+  // independent of any river's simulated state.
+  realGauge: (stationId: string) => request<RealGaugeResponse>(`/real-gauge/${stationId}`),
 }
