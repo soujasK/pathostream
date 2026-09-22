@@ -17,7 +17,7 @@ export function CdsCardView({ card, isLoading }: CdsCardViewProps) {
     return (
       <div className="flex items-center gap-3 rounded-xl border border-healthy-border bg-healthy-bg px-5 py-4 text-sm text-healthy">
         <span className="h-2 w-2 shrink-0 rounded-full bg-healthy" />
-        No active card -- upstream station not flagged, or outside the modeled arrival window.
+        No active alert
       </div>
     )
   }

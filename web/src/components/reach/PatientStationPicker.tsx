@@ -19,9 +19,6 @@ interface PatientStationPickerProps {
 export function PatientStationPicker({ groups, selectedStationId, onSelectStation }: PatientStationPickerProps) {
   return (
     <div className="space-y-4">
-      <div className="text-xs font-semibold tracking-wide text-ink-muted uppercase">
-        Patient&rsquo;s home address (nearest station)
-      </div>
       {groups.map((group) => {
         const evaluationByStation = new Map(group.evaluations.map((e) => [e.stationId, e]))
         return (

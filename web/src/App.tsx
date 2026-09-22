@@ -4,18 +4,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { api, type Catchment } from './api/client'
 import type { StationEvaluation } from './api/types'
 import { CdsCardView } from './components/CdsCardView'
-import { DisclaimerBar } from './components/DisclaimerBar'
 import { Header } from './components/Header'
 import { IncidentTimeline } from './components/incident/IncidentTimeline'
 import { ViewTabs, type ViewId } from './components/nav/ViewTabs'
 import { ProvenanceNote } from './components/ProvenanceNote'
 import { StatusHero } from './components/StatusHero'
-import { EarlyWarningPanel } from './components/reach/EarlyWarningPanel'
 import { EuropeMap } from './components/reach/EuropeMap'
 import { ForecastPanel } from './components/reach/ForecastPanel'
 import { PatientStationPicker } from './components/reach/PatientStationPicker'
 import { ReachMap } from './components/reach/ReachMap'
-import { SimulatorControls } from './components/reach/SimulatorControls'
+import { StationsPanel } from './components/reach/StationsPanel'
 import { Panel, PanelHeader } from './components/ui/Panel'
 import { Reveal } from './components/ui/Reveal'
 import { useAllCatchmentData, useCatchmentRegistry } from './hooks/useCatchments'
@@ -62,7 +60,7 @@ export default function App() {
   })
 
   // The hero follows the river being looked at: the one selected on the
-  // Operations/Timeline tabs, or the patient's river on the ED tab.
+  // Water Authority/Timeline tabs, or the patient's river on the ED tab.
   const heroCatchmentId = activeView === 'emergency' ? (patientCatchmentId ?? activeCatchment) : activeCatchment
   const hero = data[heroCatchmentId]
   const worst = useMemo(() => worstEvaluation(hero?.evaluations ?? []), [hero?.evaluations])
@@ -70,9 +68,9 @@ export default function App() {
   const telemetry = useTelemetryTick()
 
   // Telemetry ticks every ~1.2s but exposure state only polls every 3s, so
-  // without this a viewer could see "Escalated -> confirmed" beside a hero
-  // and map still reading "all healthy". Refresh exposure state the moment
-  // the set of auto-escalated stations changes.
+  // without this a viewer could see "Escalated" beside a hero and map still
+  // reading "all normal". Refresh exposure state the moment the set of
+  // auto-escalated stations changes.
   const escalatedKey = telemetry.stations
     .filter((s) => s.autoEscalated)
     .map((s) => s.stationId)
@@ -141,23 +139,22 @@ export default function App() {
         stations={hero?.stations ?? []}
         worst={worst}
         networkLabel={hero ? `${hero.info.label} river network` : ''}
-        governanceName={hero?.info.governance?.name}
       />
-      <DisclaimerBar />
       <ViewTabs active={activeView} onChange={setActiveView} />
 
-      <main className="mx-auto max-w-7xl px-6 py-6">
+      <main className="mx-auto max-w-7xl space-y-5 px-6 py-5">
         {activeView === 'operations' && active && activeInfo && (
           <>
             <Reveal delay={0.03}>
-              <Panel padded={false} className="mb-6 overflow-hidden">
-                <div className="border-b border-border px-5 py-4">
-                  <PanelHeader
-                    title="Coverage"
-                    subtitle={`${registry.catchments.length} rivers · ${totalStations} stations · ${registry.countriesCovered.length} EU member states -- real, verified stations; lines are schematic, not the rivers' courses. Click a river to open it.`}
-                  />
+              <Panel padded={false} className="overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
+                  <h2 className="text-sm font-semibold tracking-wide text-ink uppercase">Coverage</h2>
+                  <span className="text-xs text-ink-muted">
+                    {registry.catchments.length} rivers &middot; {totalStations} stations &middot;{' '}
+                    {registry.countriesCovered.length} countries
+                  </span>
                 </div>
-                <div className="h-[380px]">
+                <div className="h-[320px]">
                   <EuropeMap
                     rivers={registry.catchments.map((c) => ({
                       id: c.id,
@@ -169,8 +166,7 @@ export default function App() {
                     onSelect={setSelectedCatchment}
                   />
                 </div>
-                <div className="flex flex-wrap items-center gap-2 border-t border-border bg-surface-muted px-5 py-3">
-                  <span className="text-xs font-semibold tracking-wide text-ink-muted uppercase">River:</span>
+                <div className="flex flex-wrap items-center gap-1.5 border-t border-border bg-surface-muted px-5 py-2.5">
                   {registry.catchments.map((c) => (
                     <button
                       key={c.id}
@@ -178,35 +174,27 @@ export default function App() {
                       onClick={() => setSelectedCatchment(c.id)}
                       title={c.region}
                       className={clsx(
-                        'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
                         activeCatchment === c.id
                           ? 'border-brand-700 bg-brand-700 text-white'
                           : 'border-border bg-surface text-ink-muted hover:border-brand-300 hover:text-ink',
                       )}
                     >
-                      {c.label} <span className="opacity-70">&middot; {c.stationCount}</span>
+                      {c.label}
                     </button>
                   ))}
-                  <span className="ml-auto text-xs text-ink-muted">
-                    {activeInfo.label}: {activeInfo.region}
-                    {activeInfo.riverLengthKm ? ` · ${activeInfo.riverLengthKm.toLocaleString()} km` : ''}
-                    {activeInfo.countries.length > 1 ? ` · ${activeInfo.countries.length} countries` : ''}
-                  </span>
                 </div>
               </Panel>
             </Reveal>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <div className="space-y-6">
+            <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+              <div className="space-y-5">
                 <Reveal delay={0.05}>
                   <Panel padded={false} className="overflow-hidden">
-                    <div className="border-b border-border px-5 py-4">
-                      <PanelHeader
-                        title={`${activeInfo.label} monitored reach`}
-                        subtitle={`${active.stations.length} real stations, ${activeInfo.region} (illustrative geometry)`}
-                      />
+                    <div className="border-b border-border px-5 py-3">
+                      <h2 className="text-sm font-semibold tracking-wide text-ink uppercase">{activeInfo.label} reach</h2>
                     </div>
-                    <div className="h-[460px]">
+                    <div className="h-[420px]">
                       <ReachMap
                         key={activeCatchment}
                         stations={active.stations}
@@ -220,103 +208,66 @@ export default function App() {
 
                 <Reveal delay={0.1}>
                   <Panel>
-                    <PanelHeader
-                      title="Predicted downstream impact"
-                      subtitle="Propagation forecast across this river -- illustrative model, not calibrated hydrology"
-                    />
+                    <PanelHeader title="Forecast" />
                     <ForecastPanel forecasts={active.forecasts} stations={active.stations} />
                   </Panel>
                 </Reveal>
-
-                <Reveal delay={0.15}>
-                  <Panel>
-                    <PanelHeader title="Demo & testing tools" subtitle="Report a confirmed contamination event at any station" />
-                    <SimulatorControls
-                      stations={active.stations}
-                      states={active.stationStates}
-                      onToggleBreach={(id, flagged) => void handleToggleBreach(id, flagged)}
-                      onFastForward={(minutes) => void handleFastForward(minutes)}
-                      onReset={() => void handleReset()}
-                    />
-                  </Panel>
-                </Reveal>
-
-                <Reveal delay={0.18}>
-                  <Panel>
-                    <PanelHeader
-                      title="Statistical early-warning layer"
-                      subtitle="Live EWMA control chart over raw per-station telemetry"
-                    />
-                    <EarlyWarningPanel
-                      stations={active.stations}
-                      telemetry={telemetry.stations}
-                      onInject={(id) => void handleInjectAnomaly(id)}
-                      onClear={(id) => void handleClearAnomaly(id)}
-                    />
-                  </Panel>
-                </Reveal>
               </div>
 
-              <div className="space-y-6">
-                <Reveal delay={0.16}>
-                  <ProvenanceNote catchments={registry.catchments} activeId={activeCatchment} />
-                </Reveal>
-              </div>
+              <Reveal delay={0.08}>
+                <Panel>
+                  <PanelHeader title="Stations" />
+                  <StationsPanel
+                    stations={active.stations}
+                    states={active.stationStates}
+                    telemetry={telemetry.stations}
+                    onToggleBreach={(id, flagged) => void handleToggleBreach(id, flagged)}
+                    onInject={(id) => void handleInjectAnomaly(id)}
+                    onClear={(id) => void handleClearAnomaly(id)}
+                    onFastForward={(minutes) => void handleFastForward(minutes)}
+                    onReset={() => void handleReset()}
+                  />
+                </Panel>
+              </Reveal>
             </div>
+
+            <Reveal delay={0.12}>
+              <ProvenanceNote catchments={registry.catchments} activeId={activeCatchment} />
+            </Reveal>
           </>
         )}
 
         {activeView === 'emergency' && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div className="space-y-6">
-              <Reveal delay={0.05}>
-                <Panel>
-                  <PanelHeader
-                    title="CDS Hooks patient-view card"
-                    subtitle={
-                      patientStation
-                        ? `For a patient living near ${patientStation.name} -- live output of POST /cds-services/patient-view`
-                        : 'Live output of POST /cds-services/patient-view'
-                    }
-                  />
-                  <CdsCardView card={cdsQuery.data?.cards[0]} isLoading={cdsQuery.isLoading} />
-                </Panel>
-              </Reveal>
-            </div>
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+            <Reveal delay={0.05}>
+              <Panel>
+                <PanelHeader title="CDS Hooks alert" />
+                <CdsCardView card={cdsQuery.data?.cards[0]} isLoading={cdsQuery.isLoading} />
+              </Panel>
+            </Reveal>
 
-            <div className="space-y-6">
-              <Reveal delay={0.08}>
-                <Panel>
-                  <PanelHeader title="Patient context" />
-                  <p className="mb-3 text-xs text-ink-muted">
-                    Pick any station on any river as the patient&rsquo;s home address. The alert works the same
-                    everywhere; a hospital is named only in Coimbra (CHUC, a real hospital used as framing) -- on
-                    every other river the card says &ldquo;your institution&rsquo;s protocol&rdquo; rather than
-                    inventing one.
-                  </p>
-                  <PatientStationPicker
-                    groups={registry.catchments.map((c) => ({
-                      id: c.id,
-                      label: `${c.label} · ${c.region}`,
-                      stations: data[c.id]?.stations ?? [],
-                      evaluations: data[c.id]?.evaluations ?? [],
-                    }))}
-                    selectedStationId={effectivePatient}
-                    onSelectStation={setSelectedStationId}
-                  />
-                </Panel>
-              </Reveal>
-            </div>
+            <Reveal delay={0.08}>
+              <Panel>
+                <PanelHeader title="Patient home station" />
+                <PatientStationPicker
+                  groups={registry.catchments.map((c) => ({
+                    id: c.id,
+                    label: c.label,
+                    stations: data[c.id]?.stations ?? [],
+                    evaluations: data[c.id]?.evaluations ?? [],
+                  }))}
+                  selectedStationId={effectivePatient}
+                  onSelectStation={setSelectedStationId}
+                />
+              </Panel>
+            </Reveal>
           </div>
         )}
 
         {activeView === 'timeline' && (
           <Reveal delay={0.05}>
             <Panel>
-              <PanelHeader
-                title="Incident timeline"
-                subtitle={`Every real state change across all ${registry.catchments.length} rivers, in plain language, as it happens`}
-              />
+              <PanelHeader title="Incident timeline" />
               <IncidentTimeline entries={incidentEntries} />
             </Panel>
           </Reveal>

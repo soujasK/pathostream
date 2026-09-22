@@ -67,40 +67,46 @@ function Section({
 }
 
 /** The disclosure panel: per-river rows come straight from the backend
- * registry, so a new river's sourcing appears here automatically. The
- * river currently on screen is expanded; the rest are one click away. */
+ * registry, so a new river's sourcing appears here automatically. Collapsed
+ * by default so it adds no clutter, but always one click away; when opened,
+ * the river currently on screen is expanded. */
 export function ProvenanceNote({ catchments, activeId }: { catchments: CatchmentInfo[]; activeId: string }) {
+  const [panelOpen, setPanelOpen] = useState(false)
   const [toggled, setToggled] = useState<Record<string, boolean>>({})
   const isOpen = (id: string, defaultOpen: boolean) => toggled[id] ?? defaultOpen
   const toggle = (id: string, defaultOpen: boolean) => setToggled((prev) => ({ ...prev, [id]: !isOpen(id, defaultOpen) }))
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
-      <div className="border-b border-border bg-surface-muted px-5 py-3">
-        <h2 className="text-sm font-semibold tracking-wide text-ink uppercase">What&rsquo;s verified vs illustrative</h2>
-        <p className="mt-0.5 text-xs text-ink-muted">
-          Every river&rsquo;s sourcing, from the same registry that drives the map. Full table with sources in
-          README.md. Shown here so this disclosure isn&rsquo;t buried.
-        </p>
-      </div>
-      <div className="divide-y divide-border">
-        {catchments.map((c) => (
+      <button
+        type="button"
+        onClick={() => setPanelOpen((open) => !open)}
+        aria-expanded={panelOpen}
+        className="flex w-full items-center justify-between gap-3 px-5 py-3 text-left"
+      >
+        <span className="text-sm font-semibold tracking-wide text-ink uppercase">Verified vs illustrative</span>
+        <span className="text-[11px] text-ink-faint">{panelOpen ? '▲' : '▼'}</span>
+      </button>
+      {panelOpen && (
+        <div className="divide-y divide-border border-t border-border">
+          {catchments.map((c) => (
+            <Section
+              key={c.id}
+              title={c.label}
+              subtitle={c.region}
+              rows={c.provenance}
+              open={isOpen(c.id, c.id === activeId)}
+              onToggle={() => toggle(c.id, c.id === activeId)}
+            />
+          ))}
           <Section
-            key={c.id}
-            title={c.label}
-            subtitle={c.region}
-            rows={c.provenance}
-            open={isOpen(c.id, c.id === activeId)}
-            onToggle={() => toggle(c.id, c.id === activeId)}
+            title="Shared across every river"
+            rows={SHARED_ROWS}
+            open={isOpen('shared', false)}
+            onToggle={() => toggle('shared', false)}
           />
-        ))}
-        <Section
-          title="Shared across every river"
-          rows={SHARED_ROWS}
-          open={isOpen('shared', false)}
-          onToggle={() => toggle('shared', false)}
-        />
-      </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -13,13 +13,7 @@ const DOT_CLASS: Record<TimelineEntry['severity'], string> = {
 
 export function IncidentTimeline({ entries }: { entries: TimelineEntry[] }) {
   if (entries.length === 0) {
-    return (
-      <div className="py-10 text-center text-sm text-ink-muted">
-        No incidents yet. Use the demo controls in the Water Authority Operations tab to report a contamination
-        event or inject a statistical anomaly, then come back here -- every real state change across all rivers
-        appears here automatically, in plain language, as it happens.
-      </div>
-    )
+    return <div className="py-8 text-center text-sm text-ink-muted">No incidents yet</div>
   }
 
   return (

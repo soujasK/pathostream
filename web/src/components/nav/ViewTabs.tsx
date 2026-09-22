@@ -2,10 +2,10 @@ import clsx from 'clsx'
 
 export type ViewId = 'operations' | 'emergency' | 'timeline'
 
-const TABS: { id: ViewId; label: string; description: string }[] = [
-  { id: 'operations', label: 'Water Authority Operations', description: 'Network, forecasts & demo controls' },
-  { id: 'emergency', label: 'Emergency Department', description: 'Patient context & CDS Hooks alert' },
-  { id: 'timeline', label: 'Incident Timeline', description: 'One narrative across both systems' },
+const TABS: { id: ViewId; label: string }[] = [
+  { id: 'operations', label: 'Water Authority' },
+  { id: 'emergency', label: 'Emergency Department' },
+  { id: 'timeline', label: 'Timeline' },
 ]
 
 export function ViewTabs({ active, onChange }: { active: ViewId; onChange: (id: ViewId) => void }) {
@@ -18,12 +18,11 @@ export function ViewTabs({ active, onChange }: { active: ViewId; onChange: (id: 
             type="button"
             onClick={() => onChange(tab.id)}
             className={clsx(
-              'shrink-0 border-b-2 px-4 py-3 text-left transition-colors',
+              'shrink-0 border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors',
               active === tab.id ? 'border-brand-600 text-ink' : 'border-transparent text-ink-muted hover:text-ink',
             )}
           >
-            <div className="text-sm font-semibold">{tab.label}</div>
-            <div className="text-xs text-ink-faint">{tab.description}</div>
+            {tab.label}
           </button>
         ))}
       </div>
