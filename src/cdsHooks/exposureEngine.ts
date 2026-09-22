@@ -31,10 +31,14 @@ import { classifyWfdEcologicalStatus, type WfdClassification } from "../hydrolog
  * "report confirmed contamination" testing control (the historical,
  * only source before the statistical layer existed), 'statistical-
  * detection' when the EWMA early-warning layer auto-escalated it after a
- * sustained anomaly (see earlyWarningEngine.ts's ESCALATION_THRESHOLD_TICKS).
+ * sustained anomaly (see earlyWarningEngine.ts's ESCALATION_THRESHOLD_TICKS),
+ * 'citizen-reported' when a water-authority operator explicitly promoted a
+ * citizen-submitted observation after reviewing the triage classifier's
+ * assessment (see citizen/observations.ts -- the classifier itself can
+ * never set this; only an explicit human promotion action can).
  * Threaded through so the UI/incident log can tell a causal story instead
  * of an unexplained state flip. */
-export type ConfirmationSource = "operator" | "statistical-detection";
+export type ConfirmationSource = "operator" | "statistical-detection" | "citizen-reported";
 
 export interface StationState {
   flagged: boolean;

@@ -30,6 +30,13 @@ How, in five steps (all of it runs in the demo):
    and a warning card appears, suggesting a stool test so antibiotics
    aren't guessed blindly.
 
+There's also a second way a station gets flagged, alongside the sensor
+path above: a citizen can submit a structured water/habitat report
+(clarity, odor, dead wildlife, discoloration, foam), a small trained
+classifier scores it and explains why, and a human reviewer -- never the
+model itself -- decides whether to confirm it. See "Citizen reports and
+the triage classifier" below.
+
 It covers **9 real rivers, 41 stations and 15 EU member states**. What it
 proves is not a new sensor or a new hydrology model -- it's that the pipe
 from river data to a doctor's screen can be built *today* from standards
@@ -255,6 +262,47 @@ narrative derived by diffing the same real polled state (see
 deliberately *not* narrated (with 41 stations they occur every few
 seconds); an anomaly appears once it lasts 2 ticks, and escalates at 6.
 
+## Citizen reports and the triage classifier
+
+A third confirmation path, alongside an operator's report and the EWMA
+auto-escalation above: anyone can submit a structured observation for any
+station (water clarity 1-5, unusual odor, dead wildlife, discoloration,
+foam -- modelled on the real OneAquaHealth Citizen Science App's own
+observation categories, `POST /citizen/observations`, no login). A small
+**logistic regression classifier, trained from scratch in this repo**
+(`src/citizen/logisticRegression.ts` -- sigmoid, gradient descent, L2
+regularization, no ML library dependency) scores it and returns a full,
+literal, per-feature explanation (`explainLogit`: the contributions sum
+exactly to the model's output -- not a post-hoc approximation of a black
+box, because there is no black box here). See the "Citizen observations"
+panel on the Water Authority tab.
+
+**The classifier never confirms anything by itself.** Its only possible
+output is "recommend human review" or not; only a water-authority operator
+explicitly promoting a pending report creates a real, clinically-visible
+confirmed exposure (`src/citizen/observations.ts`'s `promoteObservation`
+is the *only* path from a citizen report into the same exposure engine
+that drives the clinical alert). A promoted report's card discloses its
+real origin: *"was reported by a citizen observer (structured
+water/habitat checklist, AI-triaged) and reviewed and confirmed by the
+water authority"* -- never described as a direct sensor or lab signature.
+
+**Real vs. fake, same discipline as the rest of this project.** Real: the
+trained weights (`src/citizen/model.json`, reproducibly trained by `npm
+run train-citizen-classifier`, seed 20260922), the held-out accuracy
+(90.1% vs. a 76.7% majority-class baseline -- see `MODEL_CARD.md`'s
+second model card), and the human-in-the-loop gate. Fake, and disclosed
+as such: the training data is entirely synthetic, labelled by this
+project's own documented rule (`src/citizen/trainingData.ts`), not by any
+real citizen submissions, of which this project has none.
+
+This is also, on our own reading, the one part of this project that
+likely **does** qualify as an "AI system" under the EU AI Act -- unlike
+the EWMA/transport/rules components elsewhere, which are fixed-form and
+human-parameterised. See `SAFETY_CASE.md` section 2.2 (updated) and
+hazard **H13**, and `MODEL_CARD.md`'s citizen-classifier section for the
+full model card, caveats and recommendations.
+
 ## What's verified vs illustrative
 
 | Claim | Status |
@@ -329,7 +377,8 @@ seconds); an anomaly appears once it lasts 2 ticks, and escalates at 6.
 │   │   ├── baseline.ts              Phase-I baseline-adequacy gate (n >= 200, bounded autocorrelation) for a real sensor feed -- wired into the real IoT ingestion path (iot/ingest.ts), not into the synthetic demo telemetry
 │   │   └── earlyWarningEngine.ts    wires the above into per-station early-warning state (every river) and auto-escalates sustained anomalies into that river's exposure engine
 │   ├── iot/                         real, tested telemetry-ingestion endpoint a physical sensor could call -- isolated from the demo; see IOT_ARCHITECTURE.md
-│   ├── evaluation/                  offline detector characterization (Monte Carlo + Markov chain), seeded and reproducible -- renders EVALUATION.md and MODEL_CARD.md; see `npm run evaluate`
+│   ├── citizen/                     logistic-regression triage classifier (trained from scratch), features, synthetic training data, observations store -- human-in-the-loop only; see "Citizen reports" above
+│   ├── evaluation/                  offline detector characterization (Monte Carlo + Markov chain), seeded and reproducible -- renders EVALUATION.md and MODEL_CARD.md (both model cards); see `npm run evaluate`
 │   ├── safety/                      hazardLog.ts (data) + render.ts -- renders SAFETY_CASE.md; see `npm run safety-case`
 │   ├── hydrology/
 │   │   ├── advectionDispersion.ts   1D transport model (arrival/peak/clearance/probability)
@@ -358,15 +407,15 @@ seconds); an anomaly appears once it lasts 2 ticks, and escalates at 6.
 │       ├── realGauge.ts             fetches the live PEGELONLINE reading (timeout, cache, graceful degradation)
 │       └── server.ts                Express app; registers one route family per registry entry (+ /demo/catchments, /monitoring/feedback, /real-gauge, /iot)
 ├── test/                            multiple hundred tests: hydrology math, PDE validation, FHIR shape + official-validator-matched conformance, CDS Hooks (card provenance, feedback, auth), exposure phases, EWMA/telemetry/auto-escalation, the detector evaluation and safety-case traceability, the real-gauge and IoT-ingestion pipelines, and the river registry -- see `npm test` for the current count
-├── scripts/                         evaluate.ts / renderEvaluation.ts / renderSafetyCase.ts / exportFhirSamples.ts -- regenerate the four generated documents below
+├── scripts/                         evaluate.ts / renderEvaluation.ts / renderSafetyCase.ts / exportFhirSamples.ts / trainCitizenClassifier.ts -- regenerate the four generated documents below (+ the citizen classifier's committed weights)
 ├── web/                             React + Vite + Tailwind + MapLibre dashboard (3 views; a Europe coverage map; everything river-specific comes from /demo/catchments)
 ├── conformance/                     FHIR samples + the official-validator findings (README.md)
 ├── evaluation/                      results.json backing EVALUATION.md and MODEL_CARD.md (seeded, reproducible)
 ├── IOT_ARCHITECTURE.md              the real path from a physical sensor to this detector -- what's real (a published sensor, standard protocols, the tested ingestion endpoint) and what's a design, not a deployment
 ├── CLINICAL_REVIEW.md               a self-critique of the CDS cards against the published "Five Rights of CDS" framework -- not a substitute for a real clinician review
 ├── EVALUATION.md                    detector evidence: ARL0/ARL1, comparison with CUSUM/Shewhart, the escalation rule's false-alarm rate and how it degrades, baseline-estimation behaviour
-├── SAFETY_CASE.md                   intended use, EU MDR/AI Act self-assessment, an 11-hazard ISO-14971-style log with test-backed traceability
-├── MODEL_CARD.md                    Mitchell et al.-format model card + a datasheet for the synthetic telemetry
+├── SAFETY_CASE.md                   intended use, EU MDR/AI Act self-assessment, a 13-hazard ISO-14971-style log with test-backed traceability
+├── MODEL_CARD.md                    Mitchell et al.-format model card for the detector + a datasheet for the synthetic telemetry, plus a second, separate model card for the citizen-report triage classifier
 ├── METHODS.md                       governing equations, parameter provenance, citations
 └── index.html                       static "about this project" landing page
 ```
@@ -456,6 +505,17 @@ curl -X POST http://127.0.0.1:4300/demo/telemetry/inject \
   -H "Content-Type: application/json" -d '{"stationId":"NL-LOBITH"}'
 curl -X POST http://127.0.0.1:4300/demo/telemetry/tick
 
+# Citizen report -> AI triage -> human review queue (any station, no login)
+curl -X POST http://127.0.0.1:4300/citizen/observations \
+  -H "Content-Type: application/json" -d '{
+    "catchmentId": "mondego", "stationId": "PT-SANTA-CLARA",
+    "observation": {"clarityScore": 1, "unusualOdor": true, "deadWildlife": true,
+      "discoloration": true, "foam": false}
+  }'
+curl http://127.0.0.1:4300/citizen/observations
+# ...then a human reviewer confirms it (the ONLY path to a real exposure):
+curl -X POST http://127.0.0.1:4300/citizen/observations/<id>/promote
+
 # Every currently-active downstream forecast, cascaded through each river's flow order
 curl http://127.0.0.1:4300/demo/forecasts
 curl http://127.0.0.1:4300/demo/danube/forecasts
@@ -483,7 +543,7 @@ curl -X POST http://127.0.0.1:4300/cds-services/patient-view \
 
 The full, evidence-linked version of this list -- with which test proves
 each *is* handled and exactly what is missing for each that isn't -- is
-**`SAFETY_CASE.md`**'s hazard log (H1-H11). Summary:
+**`SAFETY_CASE.md`**'s hazard log (H1-H13). Summary:
 
 - No spatial catchment polygon — `patientView.ts` uses a fixed radius
   around each station's point instead. A real deployment needs a surveyed
@@ -534,6 +594,11 @@ each *is* handled and exactly what is missing for each that isn't -- is
 - The Incident Timeline is derived client-side from already-polled state,
   not a persisted server-side event log -- reloading the page clears it
   (same in-memory-only caveat as the rest of this prototype).
+- The citizen-report endpoints have no rate-limiting, submitter identity,
+  or abuse/coordinated-false-reporting detection -- anyone can submit any
+  number of reports for any station (`SAFETY_CASE.md` H13.5). There is
+  also no formal EU AI Act conformity assessment of the triage classifier,
+  only the self-assessment in `SAFETY_CASE.md` section 2.2 (H13.6).
 
 ## Clinical & regulatory status
 
@@ -549,7 +614,9 @@ actually use it.
 **`SAFETY_CASE.md`** is the developers' own attempt at exactly that
 analysis, done honestly rather than skipped: an intended-use statement, a
 self-assessment against MDR Rule 11 (quoting MDCG 2019-11) and the AI Act's
-definition guidelines, and an 11-hazard log where every claimed control
-traces to an automated test (`test/safetyCase.test.ts` enforces that link).
+definition guidelines (now covering both the detector and the citizen
+triage classifier separately -- they read differently), and a 13-hazard
+log where every claimed control traces to an automated test
+(`test/safetyCase.test.ts` enforces that link).
 It is explicitly **not** a substitute for a real regulatory or clinical
 safety review -- it says so on its first line.

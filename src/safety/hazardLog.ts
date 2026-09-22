@@ -53,6 +53,8 @@ const EVAL = "test/evaluation.test.ts";
 const EWS = "test/earlyWarningEngine.test.ts";
 const IOT = "test/iotIngest.test.ts";
 const GAUGE = "test/realGauges.test.ts";
+const CITIZEN_CLS = "test/citizenClassifier.test.ts";
+const CITIZEN_OBS = "test/citizenObservations.test.ts";
 
 export const HAZARDS: Hazard[] = [
   {
@@ -503,6 +505,73 @@ export const HAZARDS: Hazard[] = [
     residual: {
       level: "medium",
       text: "The blast radius of a compromised device is contained (H12.2): it can corrupt only its own isolated state, never a real alert. The blast radius of a PEGELONLINE outage or bad data is also contained (H12.3): the badge simply disappears. Neither endpoint has been through any adversarial testing beyond what these unit tests cover.",
+    },
+  },
+  {
+    id: "H13",
+    title: "A citizen report -- malicious, mistaken, or simply wrong -- leads to an unwarranted confirmed exposure",
+    harm: "A false confirmed-exposure card reaches a clinician, sourced from an unverified public submission rather than an instrument or a direct operator observation.",
+    causes: [
+      "Submission is open by design (a member of the public has no API key, unlike the IoT endpoint -- H12), so anyone can submit any combination of checkboxes for any station, any number of times.",
+      "The triage classifier (citizen/classifier.ts) is a trained ML model with ~90% held-out accuracy on synthetic data (EVALUATION-style figure, see MODEL_CARD.md) -- it is wrong some of the time, by construction, and has never seen a real citizen report.",
+      "The classifier was assessed as likely an AI system under the EU AI Act (section 2.2) -- a different, and now real, regulatory question this project did not have before this feature existed.",
+      "No identity, reputation, or rate-limiting exists for a submitter -- one person could submit many fabricated reports.",
+    ],
+    controls: [
+      {
+        id: "H13.1",
+        description:
+          "The classifier's output is a recommendation only: it can never call into the real exposure engine. Only the explicit /promote action -- standing in for a water-authority reviewer's decision -- creates a real flag, exactly the same human-in-the-loop pattern already established for statistical detection (H2) and IoT devices (H12.2).",
+        kind: "code",
+        status: "implemented",
+        evidence: [
+          { file: CITIZEN_OBS, test: "no station is flagged after a highly concerning submission (no promotion yet)" },
+          { file: CITIZEN_OBS, test: "this holds even for MANY concerning submissions at the same station" },
+        ],
+      },
+      {
+        id: "H13.2",
+        description:
+          "The reviewer sees a literal, exact breakdown of why the model flagged a report (explainLogit: every contribution sums to the logit, not a post-hoc approximation) before deciding whether to promote it -- not a bare probability with no reasoning shown.",
+        kind: "code",
+        status: "implemented",
+        evidence: [{ file: CITIZEN_CLS, test: "the explanation's contributions sum to the logit, and every contribution names a real feature" }],
+      },
+      {
+        id: "H13.3",
+        description:
+          "A promoted citizen report is honestly labelled to the clinician as citizen-originated and water-authority-reviewed (confirmedVia: 'citizen-reported'), never presented as if it were a direct operator observation or an instrument reading.",
+        kind: "code",
+        status: "implemented",
+        evidence: [{ file: CITIZEN_OBS, test: "after promotion, the CDS card fires, discloses the citizen origin honestly, and is full-strength" }],
+      },
+      {
+        id: "H13.4",
+        description: "The classifier is evaluated honestly: held-out accuracy is reported alongside a majority-class baseline, so 'the model works' is a checkable claim, not an assertion.",
+        kind: "documentation",
+        status: "implemented",
+        evidence: [{ file: CITIZEN_CLS, test: "beat the majority-class baseline by a wide margin on held-out data -- it learned something real" }],
+      },
+      {
+        id: "H13.5",
+        description: "Submitter identity, reputation weighting, rate-limiting, and abuse detection for the open submission endpoint.",
+        kind: "code",
+        status: "open",
+        evidence: [],
+        gap: "Not built. Anyone can submit any number of reports for any station; nothing here would slow down or flag a coordinated false-reporting campaign. The human-review gate (H13.1) is the only current defence, and a reviewer facing a flood of fabricated reports is itself a workable attack on their attention, not something this project defends against.",
+      },
+      {
+        id: "H13.6",
+        description: "A formal EU AI Act conformity assessment of the triage classifier (building on the qualification discussion in section 2.2).",
+        kind: "documentation",
+        status: "open",
+        evidence: [],
+        gap: "Section 2.2 records a good-faith qualification read (likely an AI system), not a conformity assessment. Real use would need that done by a qualified person, alongside the MDR question in section 2.1.",
+      },
+    ],
+    residual: {
+      level: "high",
+      text: "The human-review gate (H13.1-H13.3) means no citizen input can reach a clinician without an explicit human decision -- a materially different, safer posture than the statistical detector's auto-escalation (H1/H2). But nothing here defends against a reviewer being overwhelmed or misled at scale (H13.5), and the classifier's real-world accuracy on genuine citizen reports is unknown -- it has only ever seen synthetic data (MODEL_CARD.md).",
     },
   },
 ];

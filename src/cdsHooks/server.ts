@@ -24,6 +24,13 @@ import {
 import type { ExposureEngine } from "./exposureEngine.js";
 import { feedbackSummary, recordFeedback } from "./feedback.js";
 import { getRealGaugeReading } from "./realGauge.js";
+import {
+  dismissObservation,
+  getObservation,
+  listObservations,
+  promoteObservation,
+  submitObservation,
+} from "../citizen/observations.js";
 import { loadDeviceRegistryFromEnv, type DeviceRegistry } from "../iot/deviceAuth.js";
 import { deviceState, ingestReading, knownDeviceIds, type DeviceReading } from "../iot/ingest.js";
 import { handleOrderSelect } from "./orderSelect.js";
@@ -243,6 +250,60 @@ export function createServer(options: ServerOptions = {}) {
     } else {
       res.json({ available: false, reason: result.reason, detail: "detail" in result ? result.detail : undefined });
     }
+  });
+
+  // --- Citizen observations: a real person's structured water/habitat
+  // report (modelled on the real OneAquaHealth Citizen Science App's own
+  // observation categories -- see citizen/features.ts), triaged by a real,
+  // trained, explainable ML classifier (citizen/classifier.ts -- a
+  // genuinely different technique from the EWMA detector, and assessed
+  // separately under the EU AI Act in SAFETY_CASE.md section 2.2). Open by
+  // design (a citizen has no API key); the classifier NEVER auto-confirms
+  // anything on its own -- only the explicit /promote action, standing in
+  // for a water-authority reviewer's decision, creates a real flag. ---
+
+  app.post("/citizen/observations", (req: Request, res: Response) => {
+    const body = req.body as { stationId?: unknown; input?: unknown; note?: unknown };
+    const result = submitObservation(String(body.stationId ?? ""), body.input, body.note);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.status(201).json(result.observation);
+  });
+
+  app.get("/citizen/observations", (req: Request, res: Response) => {
+    const stationId = typeof req.query.stationId === "string" ? req.query.stationId : undefined;
+    res.json({ observations: listObservations(stationId) });
+  });
+
+  app.get("/citizen/observations/:id", (req: Request, res: Response) => {
+    const observation = getObservation(String(req.params.id));
+    if (!observation) {
+      res.status(404).json({ error: "unknown observation id" });
+      return;
+    }
+    res.json(observation);
+  });
+
+  app.post("/citizen/observations/:id/promote", (req: Request, res: Response) => {
+    const body = req.body as { severityIndex?: unknown };
+    const severityIndex = typeof body.severityIndex === "number" ? body.severityIndex : undefined;
+    const result = promoteObservation(String(req.params.id), severityIndex);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.json(result.observation);
+  });
+
+  app.post("/citizen/observations/:id/dismiss", (_req: Request, res: Response) => {
+    const result = dismissObservation(String(_req.params.id));
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+    res.json(result.observation);
   });
 
   // --- IoT telemetry ingestion: the real, tested endpoint a physical

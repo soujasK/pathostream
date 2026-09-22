@@ -32,6 +32,49 @@ export type RealGaugeResponse =
     }
   | { available: false; reason: 'no-match' | 'fetch-failed'; detail?: string }
 
+/** citizen/features.ts -- a structured water/habitat report, modelled on
+ * the real OneAquaHealth Citizen Science App's own observation categories
+ * (photos/video are not modelled here -- see METHODS.md section 6d). */
+export interface ObservationInput {
+  clarityScore: 1 | 2 | 3 | 4 | 5
+  unusualOdor: boolean
+  deadWildlife: boolean
+  discoloration: boolean
+  foam: boolean
+}
+
+export interface FeatureContribution {
+  feature: string
+  value: number
+  weight: number
+  contribution: number
+}
+
+/** citizen/classifier.ts's output: a real, trained, explainable logistic
+ * regression -- never auto-confirms anything, only ever recommends a
+ * human reviewer take a look. */
+export interface TriageResult {
+  probability: number
+  recommendReview: boolean
+  threshold: number
+  explanation: { bias: number; contributions: FeatureContribution[]; logit: number }
+  modelInfo: { trainedOn: number; heldOutAccuracy: number; seed: number }
+}
+
+export type ObservationStatus = 'pending' | 'promoted' | 'dismissed'
+
+export interface CitizenObservation {
+  id: string
+  stationId: string
+  catchmentId: string
+  submittedAt: string
+  input: ObservationInput
+  note: string | null
+  triage: TriageResult
+  status: ObservationStatus
+  reviewedAt: string | null
+}
+
 export interface ProvenanceRow {
   claim: string
   status: 'verified' | 'illustrative'

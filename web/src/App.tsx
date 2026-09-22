@@ -9,6 +9,7 @@ import { IncidentTimeline } from './components/incident/IncidentTimeline'
 import { ViewTabs, type ViewId } from './components/nav/ViewTabs'
 import { ProvenanceNote } from './components/ProvenanceNote'
 import { StatusHero } from './components/StatusHero'
+import { CitizenObservationsPanel } from './components/reach/CitizenObservationsPanel'
 import { EuropeMap } from './components/reach/EuropeMap'
 import { ForecastPanel } from './components/reach/ForecastPanel'
 import { PatientStationPicker } from './components/reach/PatientStationPicker'
@@ -214,21 +215,30 @@ export default function App() {
                 </Reveal>
               </div>
 
-              <Reveal delay={0.08}>
-                <Panel>
-                  <PanelHeader title="Stations" />
-                  <StationsPanel
-                    stations={active.stations}
-                    states={active.stationStates}
-                    telemetry={telemetry.stations}
-                    onToggleBreach={(id, flagged) => void handleToggleBreach(id, flagged)}
-                    onInject={(id) => void handleInjectAnomaly(id)}
-                    onClear={(id) => void handleClearAnomaly(id)}
-                    onFastForward={(minutes) => void handleFastForward(minutes)}
-                    onReset={() => void handleReset()}
-                  />
-                </Panel>
-              </Reveal>
+              <div className="space-y-6">
+                <Reveal delay={0.08}>
+                  <Panel>
+                    <PanelHeader title="Stations" />
+                    <StationsPanel
+                      stations={active.stations}
+                      states={active.stationStates}
+                      telemetry={telemetry.stations}
+                      onToggleBreach={(id, flagged) => void handleToggleBreach(id, flagged)}
+                      onInject={(id) => void handleInjectAnomaly(id)}
+                      onClear={(id) => void handleClearAnomaly(id)}
+                      onFastForward={(minutes) => void handleFastForward(minutes)}
+                      onReset={() => void handleReset()}
+                    />
+                  </Panel>
+                </Reveal>
+
+                <Reveal delay={0.1}>
+                  <Panel>
+                    <PanelHeader title="Citizen observations" />
+                    <CitizenObservationsPanel catchmentId={activeCatchment} stations={active.stations} />
+                  </Panel>
+                </Reveal>
+              </div>
             </div>
 
             <Reveal delay={0.12}>

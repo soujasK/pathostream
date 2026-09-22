@@ -1,0 +1,33 @@
+{
+  "seed": 20260922,
+  "featureNames": [
+    "clarity concern",
+    "unusual odor",
+    "dead wildlife",
+    "discoloration",
+    "foam"
+  ],
+  "weights": [
+    1.3449254955944978,
+    2.129205695593285,
+    5.168352869771383,
+    2.148643595694121,
+    0.2894863761273234
+  ],
+  "bias": -3.042724720324585,
+  "trainedOn": {
+    "n": 3000,
+    "heldOutN": 1000
+  },
+  "metrics": {
+    "train": {
+      "loss": 0.2684726714714173,
+      "accuracy": 0.9193333333333333
+    },
+    "test": {
+      "loss": 0.29576654479741754,
+      "accuracy": 0.901
+    },
+    "majorityClassBaselineAccuracy": 0.767
+  }
+}

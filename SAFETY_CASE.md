@@ -42,8 +42,11 @@ Source: European Commission, *Guidelines on the definition of an artificial inte
 | EWMA control chart + k-consecutive escalation | A classical statistical-process-control chart with fixed, human-chosen parameters; no parameter is learned from data in this build. | Para. 40: the definition should not cover "systems that are based on the rules defined solely by natural persons to automatically execute operations". Para. 47: systems "solely intended for descriptive analysis, hypothesis testing, and visualisation" fall outside. |
 | 1D advection-dispersion transport | A closed-form physics model with placeholder parameters; nothing is trained. | Para. 43 treats physics-based systems as outside the definition; para. 48: "classical heuristic systems apply predefined rules or algorithms". |
 | Exposure rules, card logic | Deterministic if/then logic. | Para. 46: "basic data processing ... fixed human-programmed rules". |
+| Citizen-report triage classifier (citizen/classifier.ts) | A logistic regression whose weights are LEARNED by gradient descent from labelled training examples (scripts/trainCitizenClassifier.ts), not hand-set. | Para. 292 (context on inference-enabling techniques): "machine learning approaches that learn from data how to achieve certain objectives" -- the opposite of the "rules defined solely by natural persons" language paras. 40/46 use to exclude the components above. |
 
-**Assessment:** on the guidelines' wording these components look **outside** the AI-system definition -- but that is our reading, not a determination. **Re-assess** if any of these ever changes: baselines or thresholds are learned or auto-tuned from data, a machine-learning model is added, or the detector adapts after deployment. (Where software is both medical device software and an AI system, the Commission's MDCG 2025-6 addresses the interplay; it was not read.)
+**Assessment, updated:** the EWMA detector, the transport model and the exposure/card logic still look **outside** the AI-system definition on the guidelines' own wording -- but that changed for one component. **The citizen-report triage classifier is a trained machine-learning model** (Article 3(1)'s definition centres on a system that, "for explicit or implicit objectives, infers, from the input it receives, how to generate outputs"; a fitted logistic regression is a standard example of exactly that inference, not a hand-written rule) and on our reading **likely does qualify as an AI system** under the Act -- the re-assessment trigger this document named before ("a machine-learning model is added") has now actually happened, and this section is the record of doing that re-assessment, not skipping it.
+
+**What follows from that, and what does not.** Qualifying as an AI system is a necessary but not sufficient condition for the Act's high-risk obligations (Article 6, Annex III) -- among other things those generally attach to systems used as a safety component of, or forming part of the conformity assessment of, a product already regulated as a medical device (see section 2.1); whether that applies here depends on the same intended-use analysis as the MDR question above, which has not been done by a qualified person. No claim is made here that the classifier is or is not "high-risk" -- only that it is very likely in scope of the definition at all, which the EWMA/physics/rules components are not. The classifier's own risk controls (never auto-confirms; a human reviewer sees the full, literal feature-contribution breakdown before deciding) are recorded as hazard H13 below, and are good practice regardless of the classification question. (Where software is both medical device software and an AI system, the Commission's MDCG 2025-6 addresses the interplay; it was not read.)
 
 ### 2.3 Standards and guidance -- status
 
@@ -79,8 +82,9 @@ Counts are *implemented / partial / open* controls. Residual risk is the develop
 | H10 | Silent degradation over time | 0 / 1 / 0 | HIGH |
 | H11 | The prototype is mistaken for validated clinical software, or synthetic data for real | 2 / 0 / 0 | LOW |
 | H12 | A spoofed or compromised IoT device / external feed injects false data | 3 / 0 / 1 | MEDIUM |
+| H13 | A citizen report -- malicious, mistaken, or simply wrong -- leads to an unwarranted confirmed exposure | 4 / 0 / 2 | HIGH |
 
-**Totals:** 25 implemented, 3 partial, 6 open, across 12 hazards.
+**Totals:** 29 implemented, 3 partial, 8 open, across 13 hazards.
 
 ### H1 -- A false alarm reaches a clinician
 
@@ -304,6 +308,31 @@ Counts are *implemented / partial / open* controls. Residual risk is the develop
 
 **Residual risk: MEDIUM.** The blast radius of a compromised device is contained (H12.2): it can corrupt only its own isolated state, never a real alert. The blast radius of a PEGELONLINE outage or bad data is also contained (H12.3): the badge simply disappears. Neither endpoint has been through any adversarial testing beyond what these unit tests cover.
 
+### H13 -- A citizen report -- malicious, mistaken, or simply wrong -- leads to an unwarranted confirmed exposure
+
+**Harm:** A false confirmed-exposure card reaches a clinician, sourced from an unverified public submission rather than an instrument or a direct operator observation.
+
+**Causes:**
+- Submission is open by design (a member of the public has no API key, unlike the IoT endpoint -- H12), so anyone can submit any combination of checkboxes for any station, any number of times.
+- The triage classifier (citizen/classifier.ts) is a trained ML model with ~90% held-out accuracy on synthetic data (EVALUATION-style figure, see MODEL_CARD.md) -- it is wrong some of the time, by construction, and has never seen a real citizen report.
+- The classifier was assessed as likely an AI system under the EU AI Act (section 2.2) -- a different, and now real, regulatory question this project did not have before this feature existed.
+- No identity, reputation, or rate-limiting exists for a submitter -- one person could submit many fabricated reports.
+
+| Control | Description | Type | Status | Evidence |
+| --- | --- | --- | --- | --- |
+| H13.1 | The classifier's output is a recommendation only: it can never call into the real exposure engine. Only the explicit /promote action -- standing in for a water-authority reviewer's decision -- creates a real flag, exactly the same human-in-the-loop pattern already established for statistical detection (H2) and IoT devices (H12.2). | code | implemented | `test/citizenObservations.test.ts` -- "no station is flagged after a highly concerning submission (no promotion yet)"<br>`test/citizenObservations.test.ts` -- "this holds even for MANY concerning submissions at the same station" |
+| H13.2 | The reviewer sees a literal, exact breakdown of why the model flagged a report (explainLogit: every contribution sums to the logit, not a post-hoc approximation) before deciding whether to promote it -- not a bare probability with no reasoning shown. | code | implemented | `test/citizenClassifier.test.ts` -- "the explanation's contributions sum to the logit, and every contribution names a real feature" |
+| H13.3 | A promoted citizen report is honestly labelled to the clinician as citizen-originated and water-authority-reviewed (confirmedVia: 'citizen-reported'), never presented as if it were a direct operator observation or an instrument reading. | code | implemented | `test/citizenObservations.test.ts` -- "after promotion, the CDS card fires, discloses the citizen origin honestly, and is full-strength" |
+| H13.4 | The classifier is evaluated honestly: held-out accuracy is reported alongside a majority-class baseline, so 'the model works' is a checkable claim, not an assertion. | documentation | implemented | `test/citizenClassifier.test.ts` -- "beat the majority-class baseline by a wide margin on held-out data -- it learned something real" |
+| H13.5 | Submitter identity, reputation weighting, rate-limiting, and abuse detection for the open submission endpoint. | code | **OPEN** | -- |
+| H13.6 | A formal EU AI Act conformity assessment of the triage classifier (building on the qualification discussion in section 2.2). | documentation | **OPEN** | -- |
+
+**What is missing:**
+- **H13.5:** Not built. Anyone can submit any number of reports for any station; nothing here would slow down or flag a coordinated false-reporting campaign. The human-review gate (H13.1) is the only current defence, and a reviewer facing a flood of fabricated reports is itself a workable attack on their attention, not something this project defends against.
+- **H13.6:** Section 2.2 records a good-faith qualification read (likely an AI system), not a conformity assessment. Real use would need that done by a qualified person, alongside the MDR question in section 2.1.
+
+**Residual risk: HIGH.** The human-review gate (H13.1-H13.3) means no citizen input can reach a clinician without an explicit human decision -- a materially different, safer posture than the statistical detector's auto-escalation (H1/H2). But nothing here defends against a reviewer being overwhelmed or misled at scale (H13.5), and the classifier's real-world accuracy on genuine citizen reports is unknown -- it has only ever seen synthetic data (MODEL_CARD.md).
+
 ## 4. Traceability
 
 Every control marked *implemented* that is a code control names an automated test file and a test title; `test/safetyCase.test.ts` fails if the file is missing, if the title no longer exists in it, if an *open* control claims evidence, or if this document is stale. Controls verified only by a manual browser check are labelled as such and are **not** regression-protected.
@@ -319,6 +348,8 @@ Every control marked *implemented* that is a code control names an automated tes
 - **H9.1** (H9, partial): The trigger itself is unchanged: it fires for any MedicationRequest while any Mondego station is flagged.
 - **H10.1** (H10, partial): No automated drift monitor, no periodic re-estimation, no alarm on a rising false-escalation rate.
 - **H12.4** (H12, open): The pre-shared-key model in deviceAuth.ts is a manual, env-var-configured list -- workable for a handful of devices a developer configures by hand, not a real fleet.
+- **H13.5** (H13, open): Not built. Anyone can submit any number of reports for any station; nothing here would slow down or flag a coordinated false-reporting campaign. The human-review gate (H13.1) is the only current defence, and a reviewer facing a flood of fabricated reports is itself a workable attack on their attention, not something this project defends against.
+- **H13.6** (H13, open): Section 2.2 records a good-faith qualification read (likely an AI system), not a conformity assessment. Real use would need that done by a qualified person, alongside the MDR question in section 2.1.
 
 ## 6. Before any clinical use, at minimum
 

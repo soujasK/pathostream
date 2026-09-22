@@ -73,7 +73,7 @@ Full tables and method in EVALUATION.md. Headlines (simulation only):
 3. The chart is turbidity-only and mean-shift-only; it cannot see events without a turbidity signature. Do not use it as the sole safeguard for any hazard.
 4. The two-sided chart also alarms on abnormally low turbidity, wasting false-alarm budget for this use; a one-sided variant is a candidate change, not made.
 5. The sensitivity band is an assumption, not a calibrated interval.
-6. Re-assess AI Act status if any component ever becomes learned or adaptive (SAFETY_CASE.md section 2.2).
+6. This detector's own AI Act status (outside the "AI system" definition, section 2.2) is unchanged, but the project as a whole now has a component that IS a trained ML model -- see the citizen-report triage classifier's own model card below, a separate model with its own separate AI Act read.
 7. Monitor the override rate once cards are shown to real clinicians (`GET /monitoring/feedback`), and treat a high sustained rate as a defect.
 
 ## Appendix: datasheet for the synthetic telemetry
@@ -86,3 +86,107 @@ Format after Gebru et al., *Datasheets for Datasets* (Communications of the ACM 
 - **Preprocessing.** None beyond clipping and rounding.
 - **Uses.** Demonstrating and unit-testing the detector. **Not** suitable for estimating real-world detection performance.
 - **Distribution and maintenance.** Not distributed as a dataset; it is produced by `src/analytics/telemetryStream.ts`. Maintained with the repository.
+
+---
+
+# Model card: citizen-report triage classifier
+
+A second, separate model from the detector above -- included here so both
+models this project ships get an equally honest card, not just the one
+that came first.
+
+## Model details
+
+A **logistic regression**, weights fit by batch gradient descent on
+L2-regularized binary cross-entropy loss (`src/citizen/logisticRegression.ts`,
+implemented from scratch, no ML library dependency -- the point is that its
+~60 lines are directly inspectable). Trained by
+`scripts/trainCitizenClassifier.ts`; weights committed at
+`src/citizen/model.json` (seed 20260922, fully reproducible).
+
+Unlike the EWMA detector, network transport model and exposure/card logic
+documented above -- all fixed-form, human-parameterised, and assessed as
+outside the EU AI Act's "AI system" definition (SAFETY_CASE.md section
+2.2) -- **this is a trained machine-learning model**, and on our reading
+**likely does qualify** as an AI system under the Act. That is a real,
+substantive difference between the two models in this one project, not a
+technicality.
+
+## Intended use
+
+Score a citizen's structured water/habitat observation (clarity 1-5,
+unusual odor, dead wildlife, discoloration, foam -- modelled on the real
+OneAquaHealth Citizen Science App's own observation categories) for
+whether a **human water-authority reviewer** should look at it. It **never**
+confirms an exposure itself -- see `src/citizen/observations.ts` and
+SAFETY_CASE.md hazard H13. Not intended for any other input shape, any
+other decision, or any automated action.
+
+## Factors
+
+Five binary/ordinal features, listed here by their learned weight (largest
+first -- every one is positive, i.e. every modelled risk factor pushes
+toward "recommend review", which matches the documented labelling rule
+it was trained to approximate):
+
+1. **dead wildlife** (weight 5.168)
+2. **discoloration** (weight 2.149)
+3. **unusual odor** (weight 2.129)
+4. **clarity concern** (weight 1.345)
+5. **foam** (weight 0.289)
+
+Bias term: -3.043 (negative -- a report with no red flags defaults toward "no concern").
+
+## Metrics
+
+Held-out accuracy and loss, and a majority-class baseline -- a classifier
+that just always predicted the more common class would already score
+76.7%, so accuracy alone would be
+misleading without it printed alongside.
+
+| | Train (n=3000) | Held-out test (n=1000) |
+|---|---|---|
+| Accuracy | 91.9% | 90.1% |
+| Cross-entropy loss | 0.268 | 0.296 |
+| Majority-class baseline | -- | 76.7% |
+
+Every prediction also returns a full, literal explanation (`explainLogit`):
+each feature's contribution to the logit, which sum exactly to the
+model's output -- not a post-hoc approximation of a black box, because
+there is no black box here to approximate.
+
+## Evaluation data / Training data
+
+**Entirely synthetic**, generated and labelled by a documented rule
+(`src/citizen/trainingData.ts`'s `ruleBasedLabel`, with 5% label noise) --
+**not** real citizen submissions, none of which exist in or were used by
+this project. The labelling rule is this project's own judgement call
+about which combinations plausibly warrant review, disclosed as a design
+choice, not derived from any published water-quality guidance.
+
+## Ethical considerations
+
+- **Human-in-the-loop by construction** (SAFETY_CASE.md H13.1): the
+  highest-probability output this model can produce still only creates a
+  pending record for a human to review, never a confirmed exposure.
+- **Never evaluated on a real citizen report.** Held-out accuracy above is
+  against more synthetic data drawn from the same generator -- it says the
+  model learned the synthetic rule, not that it will perform well on real
+  human submissions, which may differ from the synthetic distribution in
+  ways this evaluation cannot see.
+- **No submitter identity or abuse defence** (H13.5): the model scores
+  whatever it is given; nothing here detects a coordinated false-reporting
+  campaign.
+
+## Caveats and recommendations
+
+1. Do not treat "held-out accuracy 90%" as real-world accuracy -- it is
+   synthetic-data accuracy, a check that training worked, not a
+   real-world performance claim.
+2. Before any real deployment, get real, labelled citizen reports (even a
+   small pilot set) and re-evaluate on those specifically.
+3. The review threshold (0.35, not the model's own 0.5 decision boundary)
+   is a deliberate choice to favour false positives over false negatives
+   -- re-examine it once real-world costs of each error type are known.
+4. Revisit the AI Act qualification above with a qualified person before
+   any real use, alongside the MDR question in SAFETY_CASE.md section 2.1.

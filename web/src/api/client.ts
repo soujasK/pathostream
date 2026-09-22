@@ -1,10 +1,12 @@
 import type {
   CatchmentsResponse,
   CdsHookResponse,
+  CitizenObservation,
   DemoForecastsResponse,
   DemoStateResponse,
   DemoTelemetryResponse,
   NetworkStation,
+  ObservationInput,
   RealGaugeResponse,
   StationState,
 } from './types'
@@ -95,4 +97,15 @@ export const api = {
   // Not catchment-scoped and not under /demo -- a real external reading,
   // independent of any river's simulated state.
   realGauge: (stationId: string) => request<RealGaugeResponse>(`/real-gauge/${stationId}`),
+  // Citizen observations: open (a citizen has no API key), never
+  // catchment-scoped or gated behind /demo -- see citizen/observations.ts.
+  citizenObservations: {
+    submit: (stationId: string, input: ObservationInput, note?: string) =>
+      request<CitizenObservation>('/citizen/observations', { method: 'POST', body: JSON.stringify({ stationId, input, note }) }),
+    list: (stationId?: string) =>
+      request<{ observations: CitizenObservation[] }>(`/citizen/observations${stationId ? `?stationId=${stationId}` : ''}`),
+    promote: (id: string, severityIndex?: number) =>
+      request<CitizenObservation>(`/citizen/observations/${id}/promote`, { method: 'POST', body: JSON.stringify({ severityIndex }) }),
+    dismiss: (id: string) => request<CitizenObservation>(`/citizen/observations/${id}/dismiss`, { method: 'POST' }),
+  },
 }

@@ -25,11 +25,20 @@ const GI_PATHOGEN_PCR_PANEL = { system: LOINC_SYSTEM, code: "82195-9" };
 /** How a flagged station's flag is described to a clinician. An operator's
  * report is direct ground truth; a statistical auto-escalation is inferred
  * from a turbidity trend alone -- it never observed a pathogen or a
- * biological signature, so the card must not claim it did. */
+ * biological signature, so the card must not claim it did. A citizen
+ * report that a water-authority operator has explicitly reviewed and
+ * promoted (citizen/observations.ts) is as actionable as an operator's own
+ * report -- a human made the confirmation call either way -- but its
+ * wording stays honest about where the original observation came from
+ * (a person's structured checklist submission, not an instrument). */
 function describeFlag(confirmedVia: ConfirmationSource | undefined): string {
-  return confirmedVia === "statistical-detection"
-    ? "was auto-escalated from a sustained statistical turbidity anomaly (an inferred early-warning signal, not a direct pathogen or biohazard measurement)"
-    : "currently shows an active biohazard signature";
+  if (confirmedVia === "statistical-detection") {
+    return "was auto-escalated from a sustained statistical turbidity anomaly (an inferred early-warning signal, not a direct pathogen or biohazard measurement)";
+  }
+  if (confirmedVia === "citizen-reported") {
+    return "was reported by a citizen observer (structured water/habitat checklist, AI-triaged) and reviewed and confirmed by the water authority";
+  }
+  return "currently shows an active biohazard signature";
 }
 
 function allStationPositions(): Map<string, StationPosition> {
