@@ -9,3 +9,12 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+
+# Environment / secrets -- real keys never go in the repo; .env.example is the
+# empty template.
+.env
+.env.*
+!.env.example
+
+# Demo videos are large binaries; they are shared by link, not committed.
+*.mp4

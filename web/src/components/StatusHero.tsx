@@ -99,11 +99,11 @@ export function StatusHero({ stations, worst, networkLabel }: StatusHeroProps) {
           <motion.div
             key="nominal"
             {...fade}
-            className="relative bg-[linear-gradient(135deg,_#1d4ed8_0%,_#1e3a8a_60%,_#0f1f4a_100%)] px-6 py-7 text-white"
+            className="relative bg-[linear-gradient(135deg,_#002970_0%,_#001c55_60%,_#001033_100%)] px-6 py-7 text-white border-b border-[#00baf2]/20"
           >
             <div className="relative mx-auto max-w-7xl">
-              <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.18em] text-brand-200 uppercase">
-                <span className="h-2 w-2 rounded-full bg-brand-300" />
+              <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.18em] text-[#70cef7] uppercase">
+                <span className="h-2 w-2 rounded-full bg-[#00baf2] shadow-[0_0_8px_#00baf2]" />
                 {networkLabel}
               </div>
               <h2 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">

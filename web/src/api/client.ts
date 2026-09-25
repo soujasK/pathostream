@@ -9,6 +9,11 @@ import type {
   ObservationInput,
   RealGaugeResponse,
   StationState,
+  AgentNarrative,
+  AgentStatusResponse,
+  AgentThoughtTrace,
+  MultiAgentConsensus,
+  ClinicalTriageAssessment,
 } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:4300'
@@ -107,5 +112,12 @@ export const api = {
     promote: (id: string, severityIndex?: number) =>
       request<CitizenObservation>(`/citizen/observations/${id}/promote`, { method: 'POST', body: JSON.stringify({ severityIndex }) }),
     dismiss: (id: string) => request<CitizenObservation>(`/citizen/observations/${id}/dismiss`, { method: 'POST' }),
+  },
+  agents: {
+    status: () => request<AgentStatusResponse>('/api/agents/status'),
+    deliberate: (params: { catchmentId: string; stationId?: string; patientContext?: { patientId: string; latitude: number; longitude: number; symptoms: string; exposureHoursAgo?: number; isImmunocompromised?: boolean } }) =>
+      request<MultiAgentConsensus>('/api/agents/deliberate', { method: 'POST', body: JSON.stringify(params) }),
+    triage: (params: { patientId: string; latitude: number; longitude: number; symptoms: string; exposureHoursAgo?: number; isImmunocompromised?: boolean }) =>
+      request<{ assessment: ClinicalTriageAssessment; traces: AgentThoughtTrace[]; narrative: AgentNarrative }>('/api/agents/triage', { method: 'POST', body: JSON.stringify(params) }),
   },
 }

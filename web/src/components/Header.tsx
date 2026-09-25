@@ -1,16 +1,16 @@
 export function Header() {
   return (
-    <header className="border-b border-border bg-surface">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-6 py-3">
+    <header className="border-b border-border bg-surface/90 backdrop-blur-md sticky top-0 z-40">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-700 text-xs font-bold text-white">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#002970] to-[#001c55] border border-[#00baf2]/30 text-xs font-bold text-[#00baf2] tracking-wider shadow-sm">
             OAH
           </div>
-          <span className="text-base font-semibold tracking-tight text-ink">OAH River Watch</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-base font-semibold tracking-tight text-ink">PathoStream EHR</span>
+            <span className="text-xs text-ink-muted hidden sm:inline">&middot; River Watch &amp; CDS</span>
+          </div>
         </div>
-        <span className="rounded-full border border-warning-border bg-warning-bg px-3 py-1 text-xs font-medium text-warning">
-          Research prototype &middot; synthetic data &middot; not a medical device
-        </span>
       </div>
     </header>
   )

@@ -14,7 +14,7 @@ import type { Card, CdsHookResponse, PatientViewRequest } from "./types.js";
  * around each point. Without this, `nearestStation` would happily return
  * "closest of all stations" even for a patient hundreds of km from any
  * river we monitor. */
-const NEAR_STATION_RADIUS_KM = 2.0;
+export const NEAR_STATION_RADIUS_KM = 2.0;
 
 const LOINC_SYSTEM = "http://loinc.org";
 /** LOINC 82195-9 "Gastrointestinal pathogens DNA and RNA panel - Stool by

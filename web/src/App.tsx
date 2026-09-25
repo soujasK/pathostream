@@ -15,6 +15,7 @@ import { ForecastPanel } from './components/reach/ForecastPanel'
 import { PatientStationPicker } from './components/reach/PatientStationPicker'
 import { ReachMap } from './components/reach/ReachMap'
 import { StationsPanel } from './components/reach/StationsPanel'
+import { AgentIntelligencePanel } from './components/agents/AgentIntelligencePanel'
 import { Panel, PanelHeader } from './components/ui/Panel'
 import { Reveal } from './components/ui/Reveal'
 import { useAllCatchmentData, useCatchmentRegistry } from './hooks/useCatchments'
@@ -282,7 +283,26 @@ export default function App() {
             </Panel>
           </Reveal>
         )}
+
+        {activeView === 'agents' && (
+          <Reveal delay={0.05}>
+            <AgentIntelligencePanel
+              catchments={registry.catchments}
+              activeCatchment={activeCatchment}
+              onSelectCatchment={setSelectedCatchment}
+            />
+          </Reveal>
+        )}
       </main>
+
+      <footer className="mt-12 border-t border-border bg-surface-muted/40 py-5">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 text-xs text-ink-muted">
+          <span>PathoStream EHR &middot; European River Basin Clinical Decision Support</span>
+          <span className="rounded-md border border-border bg-surface px-2.5 py-1 text-[11px] text-ink-muted">
+            Research prototype &middot; synthetic data &middot; not a medical device
+          </span>
+        </div>
+      </footer>
     </div>
   )
 }

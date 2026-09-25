@@ -36,6 +36,17 @@ import { deviceState, ingestReading, knownDeviceIds, type DeviceReading } from "
 import { handleOrderSelect } from "./orderSelect.js";
 import { handlePatientView } from "./patientView.js";
 import type { OrderSelectRequest, PatientViewRequest } from "./types.js";
+import {
+  CitizenIntelAgent,
+  ClinicalTriageAgent,
+  DECISION_SUPPORT_NOTICE,
+  EpidemicCommanderAgent,
+  GeminiAgentRunner,
+  SentinelAgent,
+  validateCatchmentAndStation,
+  validatePatientContext,
+  type PatientTriageInput,
+} from "../agents/index.js";
 
 /** What the dashboard needs to know about a river without fetching its
  * stations -- everything here is straight from the registry. */
@@ -163,6 +174,10 @@ export interface ServerOptions {
    * OAH_IOT_DEVICE_KEYS; pass one explicitly (e.g. in a test) to bypass
    * the environment. */
   iotDevices?: DeviceRegistry | undefined;
+  /** Runner for the /api/agents/* narrative model. Omit to build one from the
+   * environment (GEMINI_API_KEY); pass `new GeminiAgentRunner({ client: null })`
+   * (e.g. in a test) to guarantee no external model is called. */
+  agentRunner?: GeminiAgentRunner | undefined;
 }
 
 export function createServer(options: ServerOptions = {}) {
@@ -427,6 +442,102 @@ export function createServer(options: ServerOptions = {}) {
     }
     clearTelemetryEvent(body.stationId);
     res.json({ status: "cleared", stationId: body.stationId });
+  });
+
+  // --- Multi-agent layer (SAFETY_CASE.md H14) ---
+  // A language model, when configured, may call read-only tools through the
+  // guard in agents/toolGuard.ts and writes a labelled narrative; every value
+  // and proposal is computed by the agents themselves. Every output is a
+  // proposal for human review. Errors are reported generically: an exception message
+  // can carry request content, and patient data must not be echoed or logged
+  // (H8).
+  const agentRunner = options.agentRunner ?? new GeminiAgentRunner();
+  const sentinelAgent = new SentinelAgent(agentRunner);
+  const citizenIntelAgent = new CitizenIntelAgent(agentRunner);
+  const clinicalTriageAgent = new ClinicalTriageAgent(agentRunner);
+  const commanderAgent = new EpidemicCommanderAgent(agentRunner);
+
+  app.get("/api/agents/status", (_req: Request, res: Response) => {
+    const engine = agentRunner.describeEngine();
+    res.json({
+      status: "active",
+      hasLiveGemini: agentRunner.hasLiveGemini(),
+      activeModel: engine.engineId,
+      engine,
+      patientDataSentToLanguageModel: agentRunner.hasLiveGemini() && agentRunner.patientDataToLlmAllowed(),
+      toolGuard: agentRunner.guardLimits(),
+      requiresHumanReview: true,
+      decisionSupportNotice: DECISION_SUPPORT_NOTICE,
+      agents: [
+        { role: "sentinel", description: "River telemetry, flags and downstream-arrival forecast" },
+        { role: "citizen_intel", description: "Citizen reports by review status; only reviewed reports corroborate" },
+        { role: "clinical_triage", description: "Patient proximity to monitored stations and a heuristic pathogen differential for clinician review" },
+        { role: "incident_commander", description: "Combines the above into a draft proposal for the competent authority (never issued)" },
+      ],
+      monitoredRivers: CATCHMENTS.map((c) => ({ id: c.id, label: c.label, stations: c.stations.length })),
+    });
+  });
+
+  app.post("/api/agents/deliberate", async (req: Request, res: Response) => {
+    const target = validateCatchmentAndStation(req.body);
+    if (!target.ok) {
+      res.status(400).json({ error: target.error });
+      return;
+    }
+    let patientContext: PatientTriageInput | undefined;
+    const rawPatient = (req.body as { patientContext?: unknown }).patientContext;
+    if (rawPatient !== undefined) {
+      const patient = validatePatientContext(rawPatient);
+      if (!patient.ok) {
+        res.status(400).json({ error: patient.error });
+        return;
+      }
+      patientContext = patient.value;
+    }
+    try {
+      res.json(await commanderAgent.deliberate({ ...target.value, patientContext }));
+    } catch {
+      res.status(500).json({ error: "Deliberation failed" });
+    }
+  });
+
+  app.post("/api/agents/triage", async (req: Request, res: Response) => {
+    const patient = validatePatientContext(req.body);
+    if (!patient.ok) {
+      res.status(400).json({ error: patient.error });
+      return;
+    }
+    try {
+      res.json(await clinicalTriageAgent.triagePatient(patient.value));
+    } catch {
+      res.status(500).json({ error: "Triage failed" });
+    }
+  });
+
+  app.post("/api/agents/sentinel", async (req: Request, res: Response) => {
+    const target = validateCatchmentAndStation(req.body);
+    if (!target.ok) {
+      res.status(400).json({ error: target.error });
+      return;
+    }
+    try {
+      res.json(await sentinelAgent.evaluateCatchment(target.value.catchmentId, target.value.stationId));
+    } catch {
+      res.status(500).json({ error: "Sentinel audit failed" });
+    }
+  });
+
+  app.post("/api/agents/citizen-intel", async (req: Request, res: Response) => {
+    const target = validateCatchmentAndStation(req.body);
+    if (!target.ok) {
+      res.status(400).json({ error: target.error });
+      return;
+    }
+    try {
+      res.json(await citizenIntelAgent.evaluateGroundTruth(target.value.catchmentId));
+    } catch {
+      res.status(500).json({ error: "Citizen intel evaluation failed" });
+    }
   });
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

@@ -220,3 +220,114 @@ export interface Card {
 export interface CdsHookResponse {
   cards: Card[]
 }
+
+export type AgentRole = 'sentinel' | 'citizen_intel' | 'clinical_triage' | 'incident_commander'
+export type EvidenceBasis = 'none' | 'inferred_statistical' | 'human_confirmed'
+
+export interface EngineInfo {
+  provenance: 'live_llm' | 'rule_based'
+  engineId: string
+  fallbackReason?: string
+}
+
+export interface AgentNarrative {
+  agentRole: AgentRole
+  text: string | null
+  engine: EngineInfo
+  evidenceGapsFilled: string[]
+}
+
+export interface AgentThoughtTrace {
+  agentRole: AgentRole
+  step: number
+  source: 'deterministic_tool' | 'model_requested_tool' | 'rejected_tool_call' | 'language_model'
+  thought: string
+  action?: string
+  actionInput?: Record<string, unknown>
+  observation?: unknown
+  timestamp: string
+}
+
+export interface AgentStatusResponse {
+  status: string
+  hasLiveGemini: boolean
+  activeModel: string
+  engine: EngineInfo
+  patientDataSentToLanguageModel: boolean
+  toolGuard: { maxToolCalls: number; maxTurns: number; requestTimeoutMs: number }
+  requiresHumanReview: true
+  decisionSupportNotice: string
+  agents: Array<{ role: string; description: string }>
+  monitoredRivers: Array<{ id: string; label: string; stations: number }>
+}
+
+export type ContaminantSeverity = 'nominal' | 'low' | 'moderate' | 'critical'
+
+export interface MultiAgentConsensus {
+  incidentId: string
+  catchmentId: string
+  timestamp: string
+  overallSeverity: ContaminantSeverity
+  evidenceBasis: EvidenceBasis
+  sentinel: {
+    stationId: string | null
+    catchmentId: string
+    severity: ContaminantSeverity
+    anomalyScore: number
+    turbidityNtu: number | null
+    signalClassification: 'no_data' | 'within_control_limits' | 'turbidity_anomaly_unconfirmed' | 'human_confirmed_contamination'
+    evidenceBasis: EvidenceBasis
+    flaggedStations: Array<{ stationId: string; confirmedVia: string }>
+    assumedMeanVelocityKmh: number | null
+    downstreamArrivalEtaHours: number | null
+    downstreamArrivalBandHours: { low: number; high: number } | null
+    affectedDownstreamStations: string[]
+    rationale: string
+  }
+  citizenIntel: {
+    catchmentId: string
+    clusterCount: number
+    reviewedCount: number
+    unreviewedCount: number
+    reportedVisualSymptoms: string[]
+    correlatesWithPlume: boolean | null
+    priorityGroundInvestigationRecommended: boolean
+    rationale: string
+  }
+  clinicalTriage?: ClinicalTriageAssessment
+  commanderDirective: {
+    status: 'draft_pending_authority_approval'
+    proposedAction: 'none' | 'request_confirmatory_sampling' | 'recreational_closure' | 'boil_water_advisory'
+    municipalAdvisory: string
+    ehrBroadcastAlert: string
+  }
+  narratives: AgentNarrative[]
+  traces: AgentThoughtTrace[]
+  agentDebateLog: string[]
+  requiresHumanReview: true
+  decisionSupportNotice: string
+}
+
+export interface ClinicalTriageAssessment {
+  patientId: string
+  triagePriority: 'ROUTINE' | 'URGENT'
+  nearestStation: { id: string; name: string; distanceKm: number; withinMonitoredRadius: boolean } | null
+  exposureStatus: 'none' | 'predicted' | 'confirmed' | 'cleared'
+  exposureEvidenceBasis: EvidenceBasis
+  pathogenRankings: Array<{
+    pathogen: string
+    heuristicScore: number
+    incubationMatch: boolean | null
+    clinicalRationale: string
+  }>
+  recommendedDiagnostics: Array<{
+    testName: string
+    loincCode?: string
+    clinicalJustification: string
+  }>
+  protectiveMeasures: string[]
+  waterExposureEvidenceSummary: string
+  clinicalDisclaimer: string
+  contraindicationsOrWarnings?: string[]
+  requiresClinicianReview: true
+}

@@ -1,0 +1,336 @@
+1
+00:00:00,500 --> 00:00:05,332
+Rivers carry contamination downstream faster than any lab result comes back.
+
+2
+00:00:05,332 --> 00:00:08,639
+PathoStream EHR detects it, forecasts where it goes,
+
+3
+00:00:08,639 --> 00:00:11,691
+and warns the doctor before the patients arrive,
+
+4
+00:00:11,691 --> 00:00:14,934
+using the open health standards FHIR and CDS Hooks.
+
+5
+00:00:15,400 --> 00:00:18,092
+This is the water-authority dashboard.
+
+6
+00:00:18,092 --> 00:00:22,129
+Nine real European rivers, forty-one monitoring stations,
+
+7
+00:00:22,129 --> 00:00:26,025
+fifteen EU countries, and one pipeline for every river:
+
+8
+00:00:26,025 --> 00:00:27,725
+detect, forecast, alert.
+
+9
+00:00:28,700 --> 00:00:32,512
+On German reaches, this live badge is real water-level data from
+
+10
+00:00:32,512 --> 00:00:36,265
+PEGELONLINE, kept visibly separate from our simulated detector.
+
+11
+00:00:36,820 --> 00:00:38,151
+Detection path one.
+
+12
+00:00:38,151 --> 00:00:44,174
+A water-authority operator confirms contamination at Ponte de Santa Clara, in Coimbra.
+
+13
+00:00:46,500 --> 00:00:51,044
+Instantly, a transport model forecasts when the plume reaches each downstream
+
+14
+00:00:51,044 --> 00:00:55,174
+station, with a ninety percent travel-time band instead of one falsely
+
+15
+00:00:55,174 --> 00:00:56,059
+precise number.
+
+16
+00:00:56,059 --> 00:00:58,479
+We move the clock forward twenty minutes.
+
+17
+00:00:59,820 --> 00:01:01,347
+Now the doctor’s screen.
+
+18
+00:01:01,347 --> 00:01:04,846
+A patient living on the affected reach gets a CDS Hooks
+
+19
+00:01:04,846 --> 00:01:07,518
+card inside their health record: critical,
+
+20
+00:01:07,518 --> 00:01:10,827
+an active exposure window, and a concrete next step,
+
+21
+00:01:10,827 --> 00:01:14,390
+a stool pathogen PCR panel with its verified LOINC code.
+
+22
+00:01:15,580 --> 00:01:17,899
+Path two: nobody reports anything.
+
+23
+00:01:17,899 --> 00:01:20,285
+We inject a rising turbidity trend.
+
+24
+00:01:20,285 --> 00:01:24,991
+An EWMA control chart, the method used in industrial quality control,
+
+25
+00:01:24,991 --> 00:01:30,514
+watches for sustained drift, and after six consecutive out-of-control readings it
+
+26
+00:01:30,514 --> 00:01:31,946
+escalates on its own.
+
+27
+00:01:37,780 --> 00:01:40,730
+Same patient, weaker evidence, different card.
+
+28
+00:01:40,730 --> 00:01:43,359
+A statistical signal is not a lab result,
+
+29
+00:01:43,359 --> 00:01:46,116
+so this is a warning, labelled unconfirmed,
+
+30
+00:01:46,116 --> 00:01:48,617
+with no instruction to start treatment.
+
+31
+00:01:48,617 --> 00:01:52,080
+The alert always matches the strength of the evidence.
+
+32
+00:01:52,580 --> 00:01:56,385
+Path three: a member of the public reports cloudy water,
+
+33
+00:01:56,385 --> 00:01:58,424
+a strange odour and dead fish.
+
+34
+00:01:58,424 --> 00:02:03,249
+A trained classifier triages the report and shows exactly which answers
+
+35
+00:02:03,249 --> 00:02:04,336
+drove its score.
+
+36
+00:02:04,336 --> 00:02:05,220
+No black box.
+
+37
+00:02:15,220 --> 00:02:17,301
+But the AI never confirms anything.
+
+38
+00:02:17,301 --> 00:02:20,571
+Only a water-authority reviewer can promote the report.
+
+39
+00:02:20,571 --> 00:02:22,949
+Then the doctor’s card is full strength,
+
+40
+00:02:22,949 --> 00:02:26,754
+and says honestly that the source was a reviewed citizen report.
+
+41
+00:02:28,620 --> 00:02:33,028
+Every confirmation, escalation and forecast lands on one incident timeline,
+
+42
+00:02:33,028 --> 00:02:35,320
+the audit trail across all nine rivers.
+
+43
+00:02:35,820 --> 00:02:36,896
+Now the AI layer.
+
+44
+00:02:36,896 --> 00:02:39,365
+Four agents: a Sentinel for river data,
+
+45
+00:02:39,365 --> 00:02:43,606
+Citizen Intel, Clinical Triage, and a Commander that combines them.
+
+46
+00:02:43,606 --> 00:02:47,974
+Google Gemini drives the investigation, choosing which tools to call,
+
+47
+00:02:47,974 --> 00:02:50,886
+while a safety guard checks every single call.
+
+48
+00:02:52,060 --> 00:02:57,100
+The evidence is human-confirmed, so the Commander proposes a recreational closure,
+
+49
+00:02:57,100 --> 00:02:58,330
+but only as a draft.
+
+50
+00:02:58,330 --> 00:03:00,666
+The banner counts Gemini’s tool calls,
+
+51
+00:03:00,666 --> 00:03:03,063
+and shows clinical triage stayed local,
+
+52
+00:03:03,063 --> 00:03:06,444
+because patient data is not sent to a model by default.
+
+53
+00:03:07,660 --> 00:03:11,213
+These summaries are written by Gemini and clearly labelled.
+
+54
+00:03:11,213 --> 00:03:14,947
+They describe the evidence, but cannot change a single number,
+
+55
+00:03:14,947 --> 00:03:16,211
+severity or proposal.
+
+56
+00:03:17,100 --> 00:03:21,628
+The municipal and clinician notices are drafts, with FHIR status preparation.
+
+57
+00:03:21,628 --> 00:03:23,744
+A human authority must approve them.
+
+58
+00:03:23,744 --> 00:03:25,920
+Nothing is ever issued automatically.
+
+59
+00:03:26,420 --> 00:03:30,055
+And every step is traceable: which tools Gemini requested,
+
+60
+00:03:30,055 --> 00:03:33,877
+which ran deterministically, and any call the guard rejected,
+
+61
+00:03:33,877 --> 00:03:34,880
+with the reason.
+
+62
+00:03:35,380 --> 00:03:36,495
+Now the contrast.
+
+63
+00:03:36,495 --> 00:03:41,086
+We cleared the confirmed flags and left only this statistical anomaly,
+
+64
+00:03:41,086 --> 00:03:42,856
+with no human confirmation.
+
+65
+00:03:43,580 --> 00:03:45,288
+We run the same agents again,
+
+66
+00:03:45,288 --> 00:03:47,408
+for a patient with bloody diarrhoea,
+
+67
+00:03:47,408 --> 00:03:50,176
+and Gemini investigates through the same guard.
+
+68
+00:03:52,740 --> 00:03:56,323
+With only an unconfirmed signal, the one thing the system may
+
+69
+00:03:56,323 --> 00:03:58,614
+propose is confirmatory water sampling.
+
+70
+00:03:58,614 --> 00:04:02,960
+Never a boil-water advisory, even though a reviewed citizen report agrees.
+
+71
+00:04:03,460 --> 00:04:07,459
+Clinically, pathogen scores are labelled heuristics, not probabilities.
+
+72
+00:04:07,459 --> 00:04:09,430
+The Shiga-toxin test shows no code,
+
+73
+00:04:09,430 --> 00:04:12,021
+because only verified LOINC codes are emitted.
+
+74
+00:04:12,021 --> 00:04:15,400
+And review priority stays routine for an unconfirmed signal.
+
+75
+00:04:15,900 --> 00:04:19,425
+Nothing is guessed: bad coordinates are refused.
+
+76
+00:04:20,380 --> 00:04:23,583
+The Gemini safeguards: a tool allowlist per agent,
+
+77
+00:04:23,583 --> 00:04:27,747
+scope locked to the request, patient details bound on the server,
+
+78
+00:04:27,747 --> 00:04:29,669
+and a call budget and timeout.
+
+79
+00:04:29,669 --> 00:04:33,256
+Whatever the model does, the assessment stays identical.
+
+80
+00:04:34,300 --> 00:04:38,244
+PathoStream EHR: warn the doctor before the patients arrive.
+
+81
+00:04:38,244 --> 00:04:40,808
+A research prototype on synthetic data,
+
+82
+00:04:40,808 --> 00:04:45,212
+not a medical device, backed by a fourteen-hazard safety case where
+
+83
+00:04:45,212 --> 00:04:48,367
+every implemented control has an automated test.
+
+84
+00:04:48,367 --> 00:04:49,025
+Thank you.
+

@@ -303,6 +303,81 @@ human-parameterised. See `SAFETY_CASE.md` section 2.2 (updated) and
 hazard **H13**, and `MODEL_CARD.md`'s citizen-classifier section for the
 full model card, caveats and recommendations.
 
+## Multi-agent decision support (Google Gemini)
+
+The **Agents** tab (`src/agents/`, `/api/agents/*`) runs four agents over
+the same data: a **Sentinel** (telemetry, flags, downstream forecast),
+**Citizen Intel** (reports by review status), **Clinical Triage** (a
+patient's proximity to monitored stations and a heuristic pathogen
+differential) and a **Commander** that combines them into a proposed
+action.
+
+**What Gemini does, and what it cannot do.** With `GEMINI_API_KEY` set,
+Gemini investigates: it chooses which of its agent's tools to call and
+writes a short summary. Every call passes a guard (`src/agents/toolGuard.ts`):
+a per-agent tool allowlist (drafting an advisory is never offered to a
+model), scope pinned to the request, patient values bound server-side and
+never shown to the model, argument type checks, a 6-call / 4-turn budget
+and a per-request timeout. Every number, severity and proposal is computed
+by the agents from tool results whose arguments they fix themselves -- the
+assessment is identical whatever the model does, and a test pins that.
+Without a key, or on any model error, the agents run rule-based and the UI
+says so ("rule-based (no language model)").
+
+**Humans stay in charge.** Every output is a draft for review: notices are
+FHIR `Communication` resources with status `preparation`, marked NOT
+ISSUED; an unconfirmed statistical signal can only propose confirmatory
+sampling; only reviewed citizen reports count as corroboration; one
+patient never changes a population-level proposal. Patient symptoms are
+not sent to the model unless `OAH_AGENTS_PATIENT_DATA_TO_LLM=on`, and the
+patient identifier and location never are. See hazard **H14** in
+`SAFETY_CASE.md` and `test/agentSystem.test.ts`.
+
+Configuration is in `.env` (copy `.env.example`; `.env` is git-ignored):
+`GEMINI_API_KEY`, and optionally `OAH_GEMINI_MODEL` (default
+`gemini-2.5-flash`; the free tier's per-model daily quota is small),
+`OAH_GEMINI_TIMEOUT_MS` and `OAH_AGENTS_PATIENT_DATA_TO_LLM`.
+
+## IoT architecture: from a real sensor to this detector
+
+No public real-time turbidity feed exists in Europe (checked), so the demo's
+turbidity is synthetic. `IOT_ARCHITECTURE.md` documents the real path a
+physical sensor would take, and **the endpoint it ends at is already
+implemented and tested**:
+
+```
+[1] Sensor node          [2] Gateway        [3] Network server       [4] This backend
+open-source turbidity -> LoRaWAN or      -> decodes payload,     -> POST /iot/devices/:deviceId/telemetry
+sensor (Droujko &        NB-IoT             forwards via MQTT        (per-device bearer key)
+Molnar 2022, ETH)        (radio)            bridge or HTTP webhook    -> Phase-I baseline gate
++ microcontroller,                          (e.g. The Things          -> EWMA detector (device's own baseline)
+battery + solar                             Network)                  -> k-consecutive escalation
+```
+
+- **Real and tested (22 tests, `test/iotIngest.test.ts`):** the ingestion
+  endpoint, per-device authentication (constant-time key check, and every
+  write refused with 503 until `OAH_IOT_DEVICE_KEYS="deviceId:key,..."` is
+  configured), the Phase-I baseline-adequacy gate (a device is never
+  monitored on an unverified baseline), and the same EWMA detector and
+  escalation rule characterized in `EVALUATION.md`.
+- **Real, cited standards and hardware, but not deployed here:** the
+  sensor (Droujko & Molnar, *Scientific Reports* 2022), LoRaWAN / NB-IoT
+  radio, and an off-the-shelf network server. No hardware exists for this
+  project, and nothing claims otherwise.
+- **Isolated on purpose:** an ingested device never reaches a river's
+  exposure engine or a clinician card. Wiring a real sensor into a clinical
+  alert is a deliberate safety decision (hazards H2, H12), not a default.
+- **Precedent:** the live PEGELONLINE gauge integration already follows the
+  same external-feed pattern for a source that exists today.
+
+Example reading from a device:
+
+```bash
+curl -X POST http://127.0.0.1:4300/iot/devices/sensor-01/telemetry \
+  -H "Authorization: Bearer <device key>" -H "Content-Type: application/json" \
+  -d '{"measuredAt":"2026-09-22T10:15:00Z","ntu":14.8}'
+```
+
 ## What's verified vs illustrative
 
 | Claim | Status |

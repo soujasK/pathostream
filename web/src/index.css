@@ -4,17 +4,22 @@
 @theme {
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  /* EU-blue brand scale, echoing the EU flag's blue field. */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
+  /* Paytm signature brand scale: Electric Cyan (#00BAF2) & Deep Navy Blue (#002970) */
+  --color-brand-50: #eef9fd;
+  --color-brand-100: #d4f1fc;
+  --color-brand-200: #a8e3fa;
+  --color-brand-300: #70cef7;
+  --color-brand-400: #30baf3;
+  --color-brand-500: #00baf2;
+  --color-brand-600: #0098cc;
+  --color-brand-700: #002970;
+  --color-brand-800: #001f57;
+  --color-brand-900: #00153d;
+
+  /* Paytm specific brand accents */
+  --color-paytm-cyan: #00baf2;
+  --color-paytm-navy: #002970;
+  --color-paytm-dark: #001c55;
 
   /* EU flag gold, used sparingly as an accent (WFD/EHDS badges). */
   --color-eu-gold: #ffd700;
@@ -28,29 +33,35 @@
   --color-warning: #d97706;
   --color-warning-bg: #fffbeb;
   --color-warning-border: #fde68a;
-  --color-info: #2563eb;
-  --color-info-bg: #eff6ff;
-  --color-info-border: #bfdbfe;
+  --color-info: #00baf2;
+  --color-info-bg: #eef9fd;
+  --color-info-border: #a8e3fa;
 
   --color-surface: #ffffff;
-  --color-surface-muted: #f8fafc;
-  --color-surface-sunken: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-ink: #0f172a;
-  --color-ink-muted: #475569;
-  --color-ink-faint: #94a3b8;
+  --color-surface-muted: #f4f9fd;
+  --color-surface-sunken: #edf5fc;
+  --color-border: #d4e5f5;
+  --color-ink: #001e4a;
+  --color-ink-muted: #3a5878;
+  --color-ink-faint: #8da4be;
 
-  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06);
+  --shadow-card: 0 1px 3px 0 rgb(0 41 112 / 0.05), 0 4px 14px 0 rgb(0 186 242 / 0.05);
 }
 
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
-  background: var(--color-surface-sunken);
+  background-color: #f0f7fd;
+  background-image: 
+    radial-gradient(ellipse 90% 60% at 15% -5%, rgba(0, 186, 242, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 85% 15%, rgba(0, 41, 112, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(0, 186, 242, 0.10) 0%, transparent 60%),
+    linear-gradient(180deg, #edf6fc 0%, #f5fafd 30%, #ebf4fb 70%, #e2eefa 100%);
+  background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -66,8 +77,8 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -75,6 +86,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-ink-faint);
+  background: #a8c4de;
   border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00baf2;
 }

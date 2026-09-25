@@ -78,7 +78,7 @@ export function EuropeMap({ rivers, activeId, onSelect }: EuropeMapProps) {
         source: 'rivers',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': ['case', ['==', ['get', 'active'], true], '#1d4ed8', '#60a5fa'],
+          'line-color': ['case', ['==', ['get', 'active'], true], '#002970', '#00baf2'],
           'line-width': ['case', ['==', ['get', 'active'], true], 4.5, 2.5],
         },
       })

@@ -1,11 +1,12 @@
 import clsx from 'clsx'
 
-export type ViewId = 'operations' | 'emergency' | 'timeline'
+export type ViewId = 'operations' | 'emergency' | 'timeline' | 'agents'
 
 const TABS: { id: ViewId; label: string }[] = [
   { id: 'operations', label: 'Water Authority' },
   { id: 'emergency', label: 'Emergency Department' },
   { id: 'timeline', label: 'Timeline' },
+  { id: 'agents', label: 'Agents' },
 ]
 
 export function ViewTabs({ active, onChange }: { active: ViewId; onChange: (id: ViewId) => void }) {

@@ -55,6 +55,7 @@ const IOT = "test/iotIngest.test.ts";
 const GAUGE = "test/realGauges.test.ts";
 const CITIZEN_CLS = "test/citizenClassifier.test.ts";
 const CITIZEN_OBS = "test/citizenObservations.test.ts";
+const AGENTS = "test/agentSystem.test.ts";
 
 export const HAZARDS: Hazard[] = [
   {
@@ -572,6 +573,130 @@ export const HAZARDS: Hazard[] = [
     residual: {
       level: "high",
       text: "The human-review gate (H13.1-H13.3) means no citizen input can reach a clinician without an explicit human decision -- a materially different, safer posture than the statistical detector's auto-escalation (H1/H2). But nothing here defends against a reviewer being overwhelmed or misled at scale (H13.5), and the classifier's real-world accuracy on genuine citizen reports is unknown -- it has only ever seen synthetic data (MODEL_CARD.md).",
+    },
+  },
+  {
+    id: "H14",
+    title: "The multi-agent layer presents fabricated, inferred or model-generated output as fact, or acts without a human",
+    harm: "A clinician or authority acts on an invented reading, an unconfirmed signal presented as confirmed, a rule-based output presented as an AI model's, or an advisory that looks issued -- or patient data leaves the service for an external language model.",
+    causes: [
+      "The agents' first version substituted plausible defaults when data was missing (a 4.2 NTU reading, a 1.2 km distance to 'Mondego Station', Cryptosporidium at 85%, a 0.75 confidence floor, a fixed 6.5 km between stations).",
+      "Its fallback engine had no language model but was labelled 'gemini-react-engine', and on every run it produced a completed FHIR 'critical boil-water' alert for Mondego.",
+      "Unreviewed citizen reports and a single patient's assessment could raise a population-level severity; a turbidity threshold was labelled 'probable microbial pathogen'.",
+      "Request bodies were used unchecked (default catchment 'mondego', default symptoms 'Watery diarrhea and cramping').",
+      "Prompts sent to the external model (Google Gemini) carried the patient identifier, coordinates and symptoms.",
+    ],
+    controls: [
+      {
+        id: "H14.1",
+        description: "No fabricated values: missing telemetry, distance, ETA or pathogen match is reported as null / empty / 'outside the monitored radius'; downstream distances come from the real station geometry.",
+        kind: "code",
+        status: "implemented",
+        evidence: [
+          { file: AGENTS, test: "reports a station with no telemetry as null, never a default reading" },
+          { file: AGENTS, test: "returns an empty differential when no symptom matches, never a default pathogen" },
+          { file: AGENTS, test: "forecasts downstream arrival from the real station geometry, not a fixed per-segment distance" },
+          { file: AGENTS, test: "a patient far from any monitored station gets no river signal and no invented station distance" },
+        ],
+      },
+      {
+        id: "H14.2",
+        description: "Engine provenance: every number comes from a tool call whose arguments the agent fixed; a language model may choose which allowed tools to call (H14.8) and writes a narrative labelled with its model id, which cannot change any score, severity or action. Each trace step says whether it was a deterministic tool, a model-requested tool, a rejected call or model text. Rule-based output is labelled 'rule-based (no language model)' everywhere, including /api/agents/status.",
+        kind: "code",
+        status: "implemented",
+        evidence: [
+          { file: AGENTS, test: "labels rule-based output as rule-based, with no narrative and no model name" },
+          { file: AGENTS, test: "GET /api/agents/status reports the same engine label the agents use" },
+          { file: AGENTS, test: "labels a live narrative as model-generated, and the model's text never changes the assessment" },
+        ],
+      },
+      {
+        id: "H14.3",
+        description: "Human in the loop: advisories are drafts only (FHIR Communication status 'preparation', 'NOT ISSUED'); an unconfirmed statistical signal can only propose confirmatory sampling (H2); only reviewed citizen reports corroborate (H13.1); one patient never changes a population-level proposal; clinical output is 'considerations for clinician review'.",
+        kind: "code",
+        status: "implemented",
+        evidence: [
+          { file: AGENTS, test: "only ever drafts an advisory: FHIR status 'preparation', never issued" },
+          { file: AGENTS, test: "an unconfirmed statistical signal only ever proposes confirmatory sampling" },
+          { file: AGENTS, test: "a human-confirmed signal yields a proposal that is a draft, never issued" },
+          { file: AGENTS, test: "unreviewed citizen reports never count as corroboration; reviewed ones do" },
+          { file: AGENTS, test: "a single patient's assessment never changes the population-level proposal" },
+          { file: AGENTS, test: "URGENT only for a human-confirmed signal at the patient's station, not an inferred one or immunocompromise alone" },
+        ],
+      },
+      {
+        id: "H14.4",
+        description: "Patient data stays local by default: no clinical-triage prompt, tool or tool result reaches the external model unless OAH_AGENTS_PATIENT_DATA_TO_LLM=on, and even then the model is never sent the identifier or location; the commander's prompt carries no patient data; model errors are not logged (they can echo the prompt).",
+        kind: "code",
+        status: "implemented",
+        evidence: [
+          { file: AGENTS, test: "does not send a patient's symptoms to the external model unless explicitly allowed" },
+          { file: AGENTS, test: "even when allowed, never sends the patient identifier or location" },
+          { file: AGENTS, test: "keeps the patient assessment out of the commander's model prompt" },
+          { file: AGENTS, test: "nothing identifying a patient reaches the console during agent triage and deliberation" },
+        ],
+      },
+      {
+        id: "H14.5",
+        description: "Input validation: catchment and station must exist and belong together; patient coordinates, symptoms, exposure time and flags are type- and range-checked; nothing is defaulted; 500s are generic.",
+        kind: "code",
+        status: "implemented",
+        evidence: [
+          { file: AGENTS, test: "400s a missing or unknown catchment, or a station from another catchment, instead of defaulting" },
+          { file: AGENTS, test: "400s an invalid patient context instead of defaulting symptoms or coordinates" },
+        ],
+      },
+      {
+        id: "H14.6",
+        description: "Only LOINC codes verified against loinc.org are emitted; unverified ones are withheld.",
+        kind: "code",
+        status: "implemented",
+        evidence: [{ file: AGENTS, test: "withholds LOINC codes that have not been verified against loinc.org" }],
+      },
+      {
+        id: "H14.8",
+        description: "Guarded model tool calling (agents/toolGuard.ts): a per-agent tool allowlist (drafting an advisory is never offered to a model); the catchment, station and patient are pinned to the validated request; patient location, symptoms and exposure are bound server-side and absent from what the model is shown; unknown or mistyped parameters are refused; a rejected call is not executed and is recorded in the trace with its reason; budgets on tool calls and turns, and a timeout on every model request, with fallback to rule-based.",
+        kind: "code",
+        status: "implemented",
+        evidence: [
+          { file: AGENTS, test: "rejects a call outside the agent's allowlist, including drafting an advisory, without executing it" },
+          { file: AGENTS, test: "rejects a call that leaves the request's scope or has a malformed argument" },
+          { file: AGENTS, test: "never shows the model patient parameters, and refuses a model-supplied location" },
+          { file: AGENTS, test: "enforces the tool-call and turn budgets" },
+          { file: AGENTS, test: "times out a model that does not answer and falls back to rule-based" },
+        ],
+      },
+      {
+        id: "H14.9",
+        description: "Model-independence of the assessment: a model call is used as evidence only when its bound arguments are exactly those the agent needs; anything else is gathered deterministically and listed in the narrative's evidenceGapsFilled -- so every assessment and proposal is identical to the rule-based one whatever the model does.",
+        kind: "code",
+        status: "implemented",
+        evidence: [
+          { file: AGENTS, test: "uses a correctly-bound model call as evidence instead of repeating it" },
+          { file: AGENTS, test: "gap-fills evidence the model skipped or fetched with other arguments, and says so" },
+          { file: AGENTS, test: "whatever the model does, every assessment equals the rule-based one" },
+        ],
+      },
+      {
+        id: "H14.10",
+        description: "Evaluation of the live model's behaviour: narrative faithfulness to the tool results, prompt-injection resistance, and how often the guard rejects calls.",
+        kind: "documentation",
+        status: "open",
+        evidence: [],
+        gap: "The guard is tested against scripted adversarial stubs, not against Gemini itself. A model narrative can still be wrong or manipulated (e.g. by text in a future tool result); it cannot change a value or a proposal (H14.9), but a reader could be misled by it. No faithfulness or red-team evaluation of the narratives has been done.",
+      },
+      {
+        id: "H14.7",
+        description: "Clinical review of the pathogen rules, heuristic scores, incubation windows, contraindication wording and the URGENT criterion; a data-processing agreement and DPIA before any patient data is allowed to reach an external model.",
+        kind: "documentation",
+        status: "open",
+        evidence: [],
+        gap: "The rules and scores in matchPathogenEpidemiology were written by developers and have had no clinical review; the scores are hand-set, not fitted or validated. OAH_AGENTS_PATIENT_DATA_TO_LLM=on sends special-category health data to a third-party processor, which needs a legal basis, a processor agreement and a DPIA (H8.4) that do not exist. The /api/agents/* routes follow the CDS auth setting only in that they are unauthenticated today (H3).",
+      },
+    ],
+    residual: {
+      level: "medium",
+      text: "The code controls make the agents report unknowns honestly, keep a human on every action, keep patient data local by default, and confine the model to guarded, read-only tool calls that cannot change any value. What remains: the pathogen heuristics have not been reviewed by a clinician (H14.7), the live model's narratives have not been evaluated (H14.10), and the /api/agents/* routes are unauthenticated like the demo routes (H3).",
     },
   },
 ];

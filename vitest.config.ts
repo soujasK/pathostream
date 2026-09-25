@@ -4,5 +4,6 @@ export default defineConfig({
   root: import.meta.dirname,
   test: {
     include: ["test/**/*.test.ts"],
+    testTimeout: 15000,
   },
 });

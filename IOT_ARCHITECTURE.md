@@ -105,7 +105,7 @@ already characterized:
    the record.
 
 This is deliberately **isolated** from the demo: an ingested device's id
-is never one of the 33 registered station ids, and nothing here reaches a
+is never one of the 41 registered station ids, and nothing here reaches a
 river's exposure engine or a CDS Hooks card (`test/iotIngest.test.ts`,
 "ISOLATION" suite). Wiring a real device's escalation into a real
 clinical alert is a real decision with real consequences -- see
