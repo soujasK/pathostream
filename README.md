@@ -150,8 +150,11 @@ problem:
    and that decision-makers need better environmental-surveillance
    tooling to act on that link. This prototype is **not** a deliverable of
    that grant and claims no affiliation with it, but it targets the same
-   city, reuses the HL7 Europe OneAquaHealth FHIR IG that project's own
-   standards partner (HL7 Europe) publishes, and is honestly disclosed
+   city, exports citizen reports in the shape of the HL7 Europe
+   OneAquaHealth FHIR IG that project's own standards partner (HL7 Europe)
+   publishes -- its `observation-indicators-oah` and `location-oah`
+   profiles, passing the official HL7 validator with 0 errors (see
+   `conformance/README.md`) -- and is honestly disclosed
    against the real project's own published scope -- including where this
    demo's station choices diverge from OneAquaHealth's actual field sites.
    See `METHODS.md` §6b for that full disclosure.
@@ -302,6 +305,14 @@ the EWMA/transport/rules components elsewhere, which are fixed-form and
 human-parameterised. See `SAFETY_CASE.md` section 2.2 (updated) and
 hazard **H13**, and `MODEL_CARD.md`'s citizen-classifier section for the
 full model card, caveats and recommendations.
+
+**Citizen reports as OneAquaHealth FHIR.** `GET
+/citizen/observations/:id/fhir` returns the report as a FHIR Bundle in the
+HL7 Europe OneAquaHealth IG's shape: an `observation-indicators-oah`
+Observation (the IG's own `foam` / "Foam/colour/smell" indicator code) and a
+`location-oah` Location for the station. It passes the official HL7
+validator against the IG's profiles with 0 errors and 0 warnings -- see
+`conformance/README.md`.
 
 ## Multi-agent decision support (Google Gemini)
 

@@ -11,6 +11,7 @@ import {
 import { CATCHMENTS, COUNTRIES_COVERED, routePrefix, stationAnywhere } from "../data/catchments.js";
 import type { CatchmentDefinition, NetworkStation } from "../data/networkTypes.js";
 import { collectionBundle } from "../fhir/bundle.js";
+import { citizenObservationBundle } from "../fhir/oahObservation.js";
 import { buildForecastRiskAssessment } from "../fhir/riskAssessment.js";
 import { mulberry32 } from "../evaluation/prng.js";
 import { travelTimeBand } from "../hydrology/uncertainty.js";
@@ -299,6 +300,18 @@ export function createServer(options: ServerOptions = {}) {
       return;
     }
     res.json(observation);
+  });
+
+  // The same report as FHIR R4 in the HL7 Europe OneAquaHealth IG's shape
+  // (observation-indicators-oah + location-oah) -- see fhir/oahObservation.ts.
+  app.get("/citizen/observations/:id/fhir", (req: Request, res: Response) => {
+    const observation = getObservation(String(req.params.id));
+    const station = observation ? stationAnywhere(observation.stationId) : undefined;
+    if (!observation || !station) {
+      res.status(404).json({ error: "unknown observation id" });
+      return;
+    }
+    res.type("application/fhir+json").send(JSON.stringify(citizenObservationBundle(observation, station)));
   });
 
   app.post("/citizen/observations/:id/promote", (req: Request, res: Response) => {

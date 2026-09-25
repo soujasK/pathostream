@@ -607,6 +607,7 @@ This section is the one place that isn't true.
   peer-reviewed model validation study.
 - No claim of formal affiliation with, or endorsement by, the OneAquaHealth
   Horizon Europe consortium (CORDIS 101086521) -- this demo is an
-  independently built prototype that reuses the same FHIR IG, targets the
+  independently built prototype that uses two of the same FHIR IG's
+  profiles for citizen reports (conformance/README.md), targets the
   same city, and cites the same project as real-world context (section 6b),
   not a deliverable of that grant.

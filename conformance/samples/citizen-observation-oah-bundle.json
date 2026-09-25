@@ -1,0 +1,175 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:fef14e06-5d13-5a0d-b2fe-6aa4649e1dfb",
+      "resource": {
+        "resourceType": "Location",
+        "id": "PT-PARQUE-VERDE",
+        "meta": {
+          "profile": [
+            "http://hl7.eu/fhir/ig/oah/StructureDefinition/location-oah"
+          ]
+        },
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Monitoring station Parque Verde do Mondego (PT-PARQUE-VERDE), 40.2038, -8.4285.</p></div>"
+        },
+        "identifier": [
+          {
+            "system": "https://github.com/soujasK/pathostream/station-id",
+            "value": "PT-PARQUE-VERDE"
+          }
+        ],
+        "name": "Parque Verde do Mondego",
+        "mode": "instance",
+        "position": {
+          "longitude": -8.4285,
+          "latitude": 40.2038
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:be2737d1-180c-5003-ae2b-cc857bb8f307",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "ec5b3594-0ea1-4cf2-90be-200d2573c4ec",
+        "meta": {
+          "profile": [
+            "http://hl7.eu/fhir/ig/oah/StructureDefinition/observation-indicators-oah"
+          ]
+        },
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p>Citizen visual water check at Parque Verde do Mondego, 2026-09-25T19:11:08.059Z.</p><p>Clarity 1/5; foam yes; unusual colour no; unusual smell yes; dead fish or wildlife yes.</p><p>Review status: pending. AI triage: 100% concern -- a recommendation for human review, not a confirmation. Only a water-authority reviewer's promotion makes this report count as confirmed.</p></div>"
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "survey",
+                "display": "Survey"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.eu/fhir/ig/oah/CodeSystem/temporarySystem-oah-eu",
+              "code": "foam",
+              "display": "Foam/colour/smell"
+            }
+          ],
+          "text": "Citizen visual water check (structured checklist)"
+        },
+        "subject": {
+          "reference": "urn:uuid:fef14e06-5d13-5a0d-b2fe-6aa4649e1dfb",
+          "display": "Parque Verde do Mondego"
+        },
+        "effectiveDateTime": "2026-09-25T19:11:08.059Z",
+        "performer": [
+          {
+            "display": "Anonymous citizen observer"
+          }
+        ],
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://hl7.eu/fhir/ig/oah/CodeSystem/temporarySystem-oah-eu",
+                  "code": "foam",
+                  "display": "Foam/colour/smell"
+                }
+              ],
+              "text": "Foam on the water surface"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0136",
+                  "code": "Y",
+                  "display": "Yes"
+                }
+              ]
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://hl7.eu/fhir/ig/oah/CodeSystem/temporarySystem-oah-eu",
+                  "code": "foam",
+                  "display": "Foam/colour/smell"
+                }
+              ],
+              "text": "Unusual water colour"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0136",
+                  "code": "N",
+                  "display": "No"
+                }
+              ]
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://hl7.eu/fhir/ig/oah/CodeSystem/temporarySystem-oah-eu",
+                  "code": "foam",
+                  "display": "Foam/colour/smell"
+                }
+              ],
+              "text": "Unusual smell"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0136",
+                  "code": "Y",
+                  "display": "Yes"
+                }
+              ]
+            }
+          },
+          {
+            "code": {
+              "text": "Dead fish or wildlife seen"
+            },
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0136",
+                  "code": "Y",
+                  "display": "Yes"
+                }
+              ]
+            }
+          },
+          {
+            "code": {
+              "text": "Water clarity, citizen-rated (1 = very cloudy, 5 = very clear)"
+            },
+            "valueQuantity": {
+              "value": 1,
+              "unit": "rating (1-5)"
+            }
+          }
+        ],
+        "note": [
+          {
+            "text": "Review status: pending. AI triage: 100% concern -- a recommendation for human review, not a confirmation. Only a water-authority reviewer's promotion makes this report count as confirmed."
+          }
+        ]
+      }
+    }
+  ]
+}
