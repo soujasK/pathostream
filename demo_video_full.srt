@@ -103,234 +103,242 @@ watches for sustained drift, and after six consecutive out-of-control readings i
 escalates on its own.
 
 27
-00:01:37,780 --> 00:01:40,730
+00:01:35,780 --> 00:01:38,730
 Same patient, weaker evidence, different card.
 
 28
-00:01:40,730 --> 00:01:43,359
+00:01:38,730 --> 00:01:41,359
 A statistical signal is not a lab result,
 
 29
-00:01:43,359 --> 00:01:46,116
+00:01:41,359 --> 00:01:44,116
 so this is a warning, labelled unconfirmed,
 
 30
-00:01:46,116 --> 00:01:48,617
+00:01:44,116 --> 00:01:46,617
 with no instruction to start treatment.
 
 31
-00:01:48,617 --> 00:01:52,080
+00:01:46,617 --> 00:01:50,080
 The alert always matches the strength of the evidence.
 
 32
-00:01:52,580 --> 00:01:56,385
+00:01:50,580 --> 00:01:54,385
 Path three: a member of the public reports cloudy water,
 
 33
-00:01:56,385 --> 00:01:58,424
+00:01:54,385 --> 00:01:56,424
 a strange odour and dead fish.
 
 34
-00:01:58,424 --> 00:02:03,249
+00:01:56,424 --> 00:02:01,249
 A trained classifier triages the report and shows exactly which answers
 
 35
-00:02:03,249 --> 00:02:04,336
+00:02:01,249 --> 00:02:02,336
 drove its score.
 
 36
-00:02:04,336 --> 00:02:05,220
+00:02:02,336 --> 00:02:03,220
 No black box.
 
 37
-00:02:15,220 --> 00:02:17,301
+00:02:07,220 --> 00:02:09,301
 But the AI never confirms anything.
 
 38
-00:02:17,301 --> 00:02:20,571
+00:02:09,301 --> 00:02:12,571
 Only a water-authority reviewer can promote the report.
 
 39
-00:02:20,571 --> 00:02:22,949
+00:02:12,571 --> 00:02:14,949
 Then the doctor’s card is full strength,
 
 40
-00:02:22,949 --> 00:02:26,754
+00:02:14,949 --> 00:02:18,754
 and says honestly that the source was a reviewed citizen report.
 
 41
-00:02:28,620 --> 00:02:33,028
-Every confirmation, escalation and forecast lands on one incident timeline,
+00:02:20,620 --> 00:02:25,615
+A citizen report, exported as FHIR in the OneAquaHealth guide’s own format.
 
 42
-00:02:33,028 --> 00:02:35,320
-the audit trail across all nine rivers.
+00:02:25,615 --> 00:02:30,876
+The official HL7 validator checks it against the guide’s profiles: zero errors.
 
 43
-00:02:35,820 --> 00:02:36,896
-Now the AI layer.
+00:02:33,620 --> 00:02:38,028
+Every confirmation, escalation and forecast lands on one incident timeline,
 
 44
-00:02:36,896 --> 00:02:39,365
-Four agents: a Sentinel for river data,
+00:02:38,028 --> 00:02:40,320
+the audit trail across all nine rivers.
 
 45
-00:02:39,365 --> 00:02:43,606
-Citizen Intel, Clinical Triage, and a Commander that combines them.
+00:02:40,820 --> 00:02:41,896
+Now the AI layer.
 
 46
-00:02:43,606 --> 00:02:47,974
-Google Gemini drives the investigation, choosing which tools to call,
+00:02:41,896 --> 00:02:44,365
+Four agents: a Sentinel for river data,
 
 47
-00:02:47,974 --> 00:02:50,886
-while a safety guard checks every single call.
+00:02:44,365 --> 00:02:48,606
+Citizen Intel, Clinical Triage, and a Commander that combines them.
 
 48
-00:02:52,060 --> 00:02:57,100
-The evidence is human-confirmed, so the Commander proposes a recreational closure,
+00:02:48,606 --> 00:02:52,974
+Google Gemini drives the investigation, choosing which tools to call,
 
 49
-00:02:57,100 --> 00:02:58,330
-but only as a draft.
+00:02:52,974 --> 00:02:55,886
+while a safety guard checks every single call.
 
 50
-00:02:58,330 --> 00:03:00,666
-The banner counts Gemini’s tool calls,
+00:02:57,060 --> 00:03:02,100
+The evidence is human-confirmed, so the Commander proposes a recreational closure,
 
 51
-00:03:00,666 --> 00:03:03,063
-and shows clinical triage stayed local,
+00:03:02,100 --> 00:03:03,330
+but only as a draft.
 
 52
-00:03:03,063 --> 00:03:06,444
-because patient data is not sent to a model by default.
+00:03:03,330 --> 00:03:05,666
+The banner counts Gemini’s tool calls,
 
 53
-00:03:07,660 --> 00:03:11,213
-These summaries are written by Gemini and clearly labelled.
+00:03:05,666 --> 00:03:08,063
+and shows clinical triage stayed local,
 
 54
-00:03:11,213 --> 00:03:14,947
-They describe the evidence, but cannot change a single number,
+00:03:08,063 --> 00:03:11,444
+because patient data is not sent to a model by default.
 
 55
-00:03:14,947 --> 00:03:16,211
-severity or proposal.
+00:03:12,660 --> 00:03:16,213
+These summaries are written by Gemini and clearly labelled.
 
 56
-00:03:17,100 --> 00:03:21,628
-The municipal and clinician notices are drafts, with FHIR status preparation.
+00:03:16,213 --> 00:03:19,947
+They describe the evidence, but cannot change a single number,
 
 57
-00:03:21,628 --> 00:03:23,744
-A human authority must approve them.
+00:03:19,947 --> 00:03:21,211
+severity or proposal.
 
 58
-00:03:23,744 --> 00:03:25,920
-Nothing is ever issued automatically.
+00:03:22,100 --> 00:03:26,628
+The municipal and clinician notices are drafts, with FHIR status preparation.
 
 59
-00:03:26,420 --> 00:03:30,055
-And every step is traceable: which tools Gemini requested,
+00:03:26,628 --> 00:03:28,744
+A human authority must approve them.
 
 60
-00:03:30,055 --> 00:03:33,877
-which ran deterministically, and any call the guard rejected,
+00:03:28,744 --> 00:03:30,920
+Nothing is ever issued automatically.
 
 61
-00:03:33,877 --> 00:03:34,880
-with the reason.
+00:03:31,420 --> 00:03:35,055
+And every step is traceable: which tools Gemini requested,
 
 62
-00:03:35,380 --> 00:03:36,495
-Now the contrast.
+00:03:35,055 --> 00:03:38,877
+which ran deterministically, and any call the guard rejected,
 
 63
-00:03:36,495 --> 00:03:41,086
-We cleared the confirmed flags and left only this statistical anomaly,
+00:03:38,877 --> 00:03:39,880
+with the reason.
 
 64
-00:03:41,086 --> 00:03:42,856
-with no human confirmation.
+00:03:40,380 --> 00:03:41,495
+Now the contrast.
 
 65
-00:03:43,580 --> 00:03:45,288
-We run the same agents again,
+00:03:41,495 --> 00:03:46,086
+We cleared the confirmed flags and left only this statistical anomaly,
 
 66
-00:03:45,288 --> 00:03:47,408
-for a patient with bloody diarrhoea,
+00:03:46,086 --> 00:03:47,856
+with no human confirmation.
 
 67
-00:03:47,408 --> 00:03:50,176
-and Gemini investigates through the same guard.
+00:03:48,580 --> 00:03:50,288
+We run the same agents again,
 
 68
-00:03:52,740 --> 00:03:56,323
-With only an unconfirmed signal, the one thing the system may
+00:03:50,288 --> 00:03:52,408
+for a patient with bloody diarrhoea,
 
 69
-00:03:56,323 --> 00:03:58,614
-propose is confirmatory water sampling.
+00:03:52,408 --> 00:03:55,176
+and Gemini investigates through the same guard.
 
 70
-00:03:58,614 --> 00:04:02,960
-Never a boil-water advisory, even though a reviewed citizen report agrees.
+00:03:57,740 --> 00:04:01,323
+With only an unconfirmed signal, the one thing the system may
 
 71
-00:04:03,460 --> 00:04:07,459
-Clinically, pathogen scores are labelled heuristics, not probabilities.
+00:04:01,323 --> 00:04:03,614
+propose is confirmatory water sampling.
 
 72
-00:04:07,459 --> 00:04:09,430
-The Shiga-toxin test shows no code,
+00:04:03,614 --> 00:04:07,960
+Never a boil-water advisory, even though a reviewed citizen report agrees.
 
 73
-00:04:09,430 --> 00:04:12,021
-because only verified LOINC codes are emitted.
+00:04:08,460 --> 00:04:12,459
+Clinically, pathogen scores are labelled heuristics, not probabilities.
 
 74
-00:04:12,021 --> 00:04:15,400
-And review priority stays routine for an unconfirmed signal.
+00:04:12,459 --> 00:04:14,430
+The Shiga-toxin test shows no code,
 
 75
-00:04:15,900 --> 00:04:19,425
-Nothing is guessed: bad coordinates are refused.
+00:04:14,430 --> 00:04:17,021
+because only verified LOINC codes are emitted.
 
 76
-00:04:20,380 --> 00:04:23,583
-The Gemini safeguards: a tool allowlist per agent,
+00:04:17,021 --> 00:04:20,400
+And review priority stays routine for an unconfirmed signal.
 
 77
-00:04:23,583 --> 00:04:27,747
-scope locked to the request, patient details bound on the server,
+00:04:20,900 --> 00:04:24,424
+Nothing is guessed: bad coordinates are refused.
 
 78
-00:04:27,747 --> 00:04:29,669
-and a call budget and timeout.
+00:04:25,380 --> 00:04:28,583
+The Gemini safeguards: a tool allowlist per agent,
 
 79
-00:04:29,669 --> 00:04:33,256
-Whatever the model does, the assessment stays identical.
+00:04:28,583 --> 00:04:32,747
+scope locked to the request, patient details bound on the server,
 
 80
-00:04:34,300 --> 00:04:38,244
-PathoStream EHR: warn the doctor before the patients arrive.
+00:04:32,747 --> 00:04:34,669
+and a call budget and timeout.
 
 81
-00:04:38,244 --> 00:04:40,808
-A research prototype on synthetic data,
+00:04:34,669 --> 00:04:38,256
+Whatever the model does, the assessment stays identical.
 
 82
-00:04:40,808 --> 00:04:45,212
-not a medical device, backed by a fourteen-hazard safety case where
+00:04:39,300 --> 00:04:43,244
+PathoStream EHR: warn the doctor before the patients arrive.
 
 83
-00:04:45,212 --> 00:04:48,367
-every implemented control has an automated test.
+00:04:43,244 --> 00:04:45,808
+A research prototype on synthetic data,
 
 84
-00:04:48,367 --> 00:04:49,025
+00:04:45,808 --> 00:04:50,212
+not a medical device, backed by a fourteen-hazard safety case where
+
+85
+00:04:50,212 --> 00:04:53,367
+every implemented control has an automated test.
+
+86
+00:04:53,367 --> 00:04:54,025
 Thank you.
 
