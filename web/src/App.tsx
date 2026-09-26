@@ -252,7 +252,7 @@ export default function App() {
           <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
             <Reveal delay={0.05}>
               <Panel>
-                <PanelHeader title="CDS Hooks alert" />
+                <PanelHeader title="Doctor's alert (CDS Hooks)" />
                 <CdsCardView card={cdsQuery.data?.cards[0]} isLoading={cdsQuery.isLoading} />
               </Panel>
             </Reveal>

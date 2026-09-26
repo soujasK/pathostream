@@ -51,6 +51,13 @@ const EVIDENCE_LABEL: Record<EvidenceBasis, string> = {
   human_confirmed: 'Human-confirmed',
 }
 
+const SIGNAL_LABEL: Record<MultiAgentConsensus['sentinel']['signalClassification'], string> = {
+  no_data: 'No readings yet',
+  within_control_limits: 'Normal',
+  turbidity_anomaly_unconfirmed: 'Unusual cloudiness (not confirmed)',
+  human_confirmed_contamination: 'Confirmed by a person',
+}
+
 const hours = (h: number | null) => (h === null ? 'n/a' : `${h} h`)
 
 /** Which engine produced this run -- so a rule-based run is never shown
@@ -311,21 +318,21 @@ export function AgentIntelligencePanel({
                   <span className="font-mono font-semibold text-ink">{result.sentinel.stationId ?? 'whole catchment'}</span>
                 </div>
                 <div>
-                  <span className="text-ink-muted">Turbidity:</span>{' '}
+                  <span className="text-ink-muted">Water cloudiness:</span>{' '}
                   <span className="font-mono font-semibold text-ink">
                     {result.sentinel.turbidityNtu === null ? 'no data' : `${result.sentinel.turbidityNtu} NTU`}
                   </span>
                 </div>
                 <div>
-                  <span className="text-ink-muted">Anomaly index (heuristic):</span>{' '}
+                  <span className="text-ink-muted">Unusual-reading score (rough):</span>{' '}
                   <span className="font-mono font-semibold text-ink">{result.sentinel.anomalyScore.toFixed(2)}</span>
                 </div>
                 <div>
                   <span className="text-ink-muted">Signal:</span>{' '}
-                  <span className="font-semibold text-ink">{result.sentinel.signalClassification.replace(/_/g, ' ')}</span>
+                  <span className="font-semibold text-ink">{SIGNAL_LABEL[result.sentinel.signalClassification]}</span>
                 </div>
                 <div>
-                  <span className="text-ink-muted">Downstream ETA:</span>{' '}
+                  <span className="text-ink-muted">Reaches next station in:</span>{' '}
                   <span className="font-mono font-semibold text-ink">
                     {hours(result.sentinel.downstreamArrivalEtaHours)}
                     {result.sentinel.downstreamArrivalBandHours &&
@@ -356,7 +363,7 @@ export function AgentIntelligencePanel({
                   </span>
                 </div>
                 <div>
-                  <span className="text-ink-muted">Corroborates sensor signal:</span>{' '}
+                  <span className="text-ink-muted">Matches the sensor signal:</span>{' '}
                   <span className="font-semibold text-ink">
                     {result.citizenIntel.correlatesWithPlume === null
                       ? 'not assessed'

@@ -53,6 +53,10 @@ export function CdsCardView({ card, isLoading }: CdsCardViewProps) {
             </span>
           )}
         </div>
+        <p className="mt-3 rounded-lg bg-white/70 px-3 py-2 text-sm font-semibold text-ink">
+          <span className="text-ink-muted">In plain words: </span>
+          {plainSummary(card)}
+        </p>
         <h3 className="mt-3 text-lg leading-snug font-bold text-ink">{card.summary}</h3>
         <p className="mt-2 text-sm leading-relaxed text-ink-muted">{card.detail}</p>
         <p className="mt-3 text-xs text-ink-faint">Source: {card.source.label}</p>
@@ -74,6 +78,21 @@ export function CdsCardView({ card, isLoading }: CdsCardViewProps) {
       </motion.div>
     </AnimatePresence>
   )
+}
+
+/** One plain sentence for a busy clinician, matched to what the card actually
+ * claims: only a confirmed event is described as confirmed. */
+function plainSummary(card: Card): string {
+  if (card.indicator === 'critical') {
+    return 'Contamination near this patient’s home has been confirmed. Consider a water-related cause.'
+  }
+  if (/unconfirmed/i.test(card.summary)) {
+    return 'An automatic check suggests possible contamination near this patient’s home. It is not confirmed.'
+  }
+  if (/predicted/i.test(card.summary)) {
+    return 'Contamination upstream is expected to reach this patient’s area soon. It is not confirmed here yet.'
+  }
+  return 'A possible water issue was flagged near this patient’s home. It is not confirmed.'
 }
 
 function cardTone(indicator: Card['indicator']): string {

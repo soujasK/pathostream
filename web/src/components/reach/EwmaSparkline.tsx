@@ -44,7 +44,7 @@ export function EwmaSparkline({ history, width = 220, height = 56 }: EwmaSparkli
   const latest = history.at(-1)!
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="EWMA control chart">
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Water cloudiness trend (EWMA)">
       <path d={bandPath} fill="var(--color-brand-100)" opacity={0.5} stroke="none" />
       <path d={linePath((h) => h.sample)} fill="none" stroke="var(--color-ink-faint)" strokeWidth={1} />
       <path

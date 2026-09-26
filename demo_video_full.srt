@@ -1,344 +1,288 @@
 1
-00:00:00,500 --> 00:00:05,332
-Rivers carry contamination downstream faster than any lab result comes back.
+00:00:00,500 --> 00:00:04,852
+Rivers carry contamination downstream faster than any lab result.
 
 2
-00:00:05,332 --> 00:00:08,639
-PathoStream EHR detects it, forecasts where it goes,
+00:00:04,852 --> 00:00:08,199
+PathoStream EHR spots it, forecasts where it goes,
 
 3
-00:00:08,639 --> 00:00:11,691
+00:00:08,199 --> 00:00:11,412
 and warns the doctor before the patients arrive,
 
 4
-00:00:11,691 --> 00:00:14,934
-using the open health standards FHIR and CDS Hooks.
+00:00:11,412 --> 00:00:14,492
+using the health standards FHIR and CDS Hooks.
 
 5
-00:00:15,400 --> 00:00:18,092
-This is the water-authority dashboard.
+00:00:17,860 --> 00:00:20,482
+This is the water authority dashboard:
 
 6
-00:00:18,092 --> 00:00:22,129
-Nine real European rivers, forty-one monitoring stations,
+00:00:20,482 --> 00:00:23,656
+nine real European rivers, forty-one stations,
 
 7
-00:00:22,129 --> 00:00:26,025
-fifteen EU countries, and one pipeline for every river:
+00:00:23,656 --> 00:00:27,244
+fifteen countries, and one pipeline for every river.
 
 8
-00:00:26,025 --> 00:00:27,725
-detect, forecast, alert.
+00:00:28,260 --> 00:00:30,694
+On German rivers, this badge is live,
 
 9
-00:00:28,700 --> 00:00:32,512
-On German reaches, this live badge is real water-level data from
+00:00:30,694 --> 00:00:35,892
+real water-level data, kept separate from our simulated contamination readings.
 
 10
-00:00:32,512 --> 00:00:36,265
-PEGELONLINE, kept visibly separate from our simulated detector.
+00:00:37,020 --> 00:00:41,522
+Path one: a water official confirms contamination at Ponte de Santa
 
 11
-00:00:36,820 --> 00:00:38,151
-Detection path one.
+00:00:41,522 --> 00:00:42,732
+Clara, in Coimbra.
 
 12
-00:00:38,151 --> 00:00:44,174
-A water-authority operator confirms contamination at Ponte de Santa Clara, in Coimbra.
+00:00:43,740 --> 00:00:47,908
+A transport model forecasts when it reaches each station downstream,
 
 13
-00:00:46,500 --> 00:00:51,044
-Instantly, a transport model forecasts when the plume reaches each downstream
+00:00:47,908 --> 00:00:50,851
+with a time range, not one falsely exact number.
 
 14
-00:00:51,044 --> 00:00:55,174
-station, with a ninety percent travel-time band instead of one falsely
-
-15
-00:00:55,174 --> 00:00:56,059
-precise number.
-
-16
-00:00:56,059 --> 00:00:58,479
+00:00:50,851 --> 00:00:53,364
 We move the clock forward twenty minutes.
 
+15
+00:00:54,380 --> 00:00:55,770
+Now the doctor's screen.
+
+16
+00:00:55,770 --> 00:00:59,535
+A patient living nearby gets an alert inside their health record.
+
 17
-00:00:59,820 --> 00:01:01,347
-Now the doctor’s screen.
+00:00:59,535 --> 00:01:01,794
+It starts with one line in plain words,
 
 18
-00:01:01,347 --> 00:01:04,846
-A patient living on the affected reach gets a CDS Hooks
+00:01:01,794 --> 00:01:04,748
+then a suggested stool test with its verified code.
 
 19
-00:01:04,846 --> 00:01:07,518
-card inside their health record: critical,
-
-20
-00:01:07,518 --> 00:01:10,827
-an active exposure window, and a concrete next step,
-
-21
-00:01:10,827 --> 00:01:14,390
-a stool pathogen PCR panel with its verified LOINC code.
-
-22
-00:01:15,580 --> 00:01:17,899
+00:01:05,740 --> 00:01:08,036
 Path two: nobody reports anything.
 
+20
+00:01:08,036 --> 00:01:10,130
+The water slowly gets cloudier.
+
+21
+00:01:10,130 --> 00:01:12,561
+A trend check watches every station,
+
+22
+00:01:12,561 --> 00:01:15,262
+and after six unusual readings in a row,
+
 23
-00:01:17,899 --> 00:01:20,285
-We inject a rising turbidity trend.
+00:01:15,262 --> 00:01:17,356
+it flags the station by itself.
 
 24
-00:01:20,285 --> 00:01:24,991
-An EWMA control chart, the method used in industrial quality control,
+00:01:19,300 --> 00:01:22,883
+Same patient, weaker evidence, so a different alert:
 
 25
-00:01:24,991 --> 00:01:30,514
-watches for sustained drift, and after six consecutive out-of-control readings it
+00:01:22,883 --> 00:01:27,156
+amber, clearly marked not confirmed, with no treatment advice.
 
 26
-00:01:30,514 --> 00:01:31,946
-escalates on its own.
+00:01:27,156 --> 00:01:30,532
+The alert is only ever as strong as the evidence.
 
 27
-00:01:35,780 --> 00:01:38,730
-Same patient, weaker evidence, different card.
-
-28
-00:01:38,730 --> 00:01:41,359
-A statistical signal is not a lab result,
-
-29
-00:01:41,359 --> 00:01:44,116
-so this is a warning, labelled unconfirmed,
-
-30
-00:01:44,116 --> 00:01:46,617
-with no instruction to start treatment.
-
-31
-00:01:46,617 --> 00:01:50,080
-The alert always matches the strength of the evidence.
-
-32
-00:01:50,580 --> 00:01:54,385
+00:01:31,460 --> 00:01:35,252
 Path three: a member of the public reports cloudy water,
 
-33
-00:01:54,385 --> 00:01:56,424
-a strange odour and dead fish.
+28
+00:01:35,252 --> 00:01:37,013
+a bad smell and dead fish,
 
-34
-00:01:56,424 --> 00:02:01,249
-A trained classifier triages the report and shows exactly which answers
+29
+00:01:37,013 --> 00:01:39,112
+a warning sign for animals too.
 
-35
-00:02:01,249 --> 00:02:02,336
-drove its score.
+30
+00:01:39,112 --> 00:01:42,092
+An AI model scores the report and shows why.
 
-36
-00:02:02,336 --> 00:02:03,220
-No black box.
-
-37
-00:02:07,220 --> 00:02:09,301
+31
+00:01:44,100 --> 00:01:46,232
 But the AI never confirms anything.
 
+32
+00:01:46,232 --> 00:01:48,972
+Only a water official can approve the report.
+
+33
+00:01:48,972 --> 00:01:51,469
+Then the doctor's alert is full strength,
+
+34
+00:01:51,469 --> 00:01:53,844
+and it names the citizen as the source.
+
+35
+00:01:55,140 --> 00:01:59,564
+That report is exported as FHIR in the OneAquaHealth guide's own
+
+36
+00:01:59,564 --> 00:02:02,951
+format, and the official HL7 validator checks it:
+
+37
+00:02:02,951 --> 00:02:03,780
+zero errors.
+
 38
-00:02:09,301 --> 00:02:12,571
-Only a water-authority reviewer can promote the report.
+00:02:04,620 --> 00:02:07,090
+Every event lands on one timeline:
 
 39
-00:02:12,571 --> 00:02:14,949
-Then the doctor’s card is full strength,
-
-40
-00:02:14,949 --> 00:02:18,754
-and says honestly that the source was a reviewed citizen report.
-
-41
-00:02:20,620 --> 00:02:25,615
-A citizen report, exported as FHIR in the OneAquaHealth guide’s own format.
-
-42
-00:02:25,615 --> 00:02:30,876
-The official HL7 validator checks it against the guide’s profiles: zero errors.
-
-43
-00:02:33,620 --> 00:02:38,028
-Every confirmation, escalation and forecast lands on one incident timeline,
-
-44
-00:02:38,028 --> 00:02:40,320
+00:02:07,090 --> 00:02:09,924
 the audit trail across all nine rivers.
 
-45
-00:02:40,820 --> 00:02:41,896
+40
+00:02:11,100 --> 00:02:12,149
 Now the AI layer.
 
+41
+00:02:12,149 --> 00:02:14,308
+Four agents look at the river data,
+
+42
+00:02:14,308 --> 00:02:17,886
+the citizen reports, the patient, and the overall picture.
+
+43
+00:02:17,886 --> 00:02:22,020
+Google Gemini chooses what to check, and a guard checks every call.
+
+44
+00:02:23,100 --> 00:02:25,434
+The evidence is confirmed by a person,
+
+45
+00:02:25,434 --> 00:02:29,057
+so the commander suggests closing the river for recreation,
+
 46
-00:02:41,896 --> 00:02:44,365
-Four agents: a Sentinel for river data,
-
-47
-00:02:44,365 --> 00:02:48,606
-Citizen Intel, Clinical Triage, and a Commander that combines them.
-
-48
-00:02:48,606 --> 00:02:52,974
-Google Gemini drives the investigation, choosing which tools to call,
-
-49
-00:02:52,974 --> 00:02:55,886
-while a safety guard checks every single call.
-
-50
-00:02:57,060 --> 00:03:02,100
-The evidence is human-confirmed, so the Commander proposes a recreational closure,
-
-51
-00:03:02,100 --> 00:03:03,330
+00:02:29,057 --> 00:02:30,286
 but only as a draft.
 
+47
+00:02:30,286 --> 00:02:32,988
+Patient data stays on our server by default.
+
+48
+00:02:34,020 --> 00:02:36,888
+Gemini writes these summaries, clearly labelled.
+
+49
+00:02:36,888 --> 00:02:39,636
+They can't change a single number or decision.
+
+50
+00:02:40,660 --> 00:02:43,398
+Every notice is a draft, marked not issued.
+
+51
+00:02:43,398 --> 00:02:44,990
+A person must approve it.
+
 52
-00:03:03,330 --> 00:03:05,666
-The banner counts Gemini’s tool calls,
+00:02:44,990 --> 00:02:46,900
+Nothing is sent automatically.
 
 53
-00:03:05,666 --> 00:03:08,063
-and shows clinical triage stayed local,
+00:02:47,940 --> 00:02:51,119
+Every step is traceable: what Gemini asked for,
 
 54
-00:03:08,063 --> 00:03:11,444
-because patient data is not sent to a model by default.
+00:02:51,119 --> 00:02:53,892
+what ran, and any call the guard blocked.
 
 55
-00:03:12,660 --> 00:03:16,213
-These summaries are written by Gemini and clearly labelled.
+00:02:54,860 --> 00:02:58,022
+Now the contrast: the confirmed flag is cleared,
 
 56
-00:03:16,213 --> 00:03:19,947
-They describe the evidence, but cannot change a single number,
+00:02:58,022 --> 00:03:01,052
+leaving only an automatic, unconfirmed signal.
 
 57
-00:03:19,947 --> 00:03:21,211
-severity or proposal.
+00:03:02,300 --> 00:03:06,212
+We run the same agents again, for a patient with bloody diarrhea.
 
 58
-00:03:22,100 --> 00:03:26,628
-The municipal and clinician notices are drafts, with FHIR status preparation.
-
-59
-00:03:26,628 --> 00:03:28,744
-A human authority must approve them.
-
-60
-00:03:28,744 --> 00:03:30,920
-Nothing is ever issued automatically.
-
-61
-00:03:31,420 --> 00:03:35,055
-And every step is traceable: which tools Gemini requested,
-
-62
-00:03:35,055 --> 00:03:38,877
-which ran deterministically, and any call the guard rejected,
-
-63
-00:03:38,877 --> 00:03:39,880
-with the reason.
-
-64
-00:03:40,380 --> 00:03:41,495
-Now the contrast.
-
-65
-00:03:41,495 --> 00:03:46,086
-We cleared the confirmed flags and left only this statistical anomaly,
-
-66
-00:03:46,086 --> 00:03:47,856
-with no human confirmation.
-
-67
-00:03:48,580 --> 00:03:50,288
-We run the same agents again,
-
-68
-00:03:50,288 --> 00:03:52,408
-for a patient with bloody diarrhoea,
-
-69
-00:03:52,408 --> 00:03:55,176
-and Gemini investigates through the same guard.
-
-70
-00:03:57,740 --> 00:04:01,323
+00:03:08,260 --> 00:03:12,052
 With only an unconfirmed signal, the one thing the system may
 
-71
-00:04:01,323 --> 00:04:03,614
-propose is confirmatory water sampling.
+59
+00:03:12,052 --> 00:03:14,103
+suggest is taking a water sample.
 
-72
-00:04:03,614 --> 00:04:07,960
-Never a boil-water advisory, even though a reviewed citizen report agrees.
+60
+00:03:14,103 --> 00:03:15,844
+Never a boil-water advisory.
 
-73
-00:04:08,460 --> 00:04:12,459
-Clinically, pathogen scores are labelled heuristics, not probabilities.
+61
+00:03:16,740 --> 00:03:20,313
+Clinically, disease scores are labelled as rough rankings,
 
-74
-00:04:12,459 --> 00:04:14,430
-The Shiga-toxin test shows no code,
+62
+00:03:20,313 --> 00:03:23,886
+not probabilities, and only verified test codes are shown.
 
-75
-00:04:14,430 --> 00:04:17,021
-because only verified LOINC codes are emitted.
+63
+00:03:23,886 --> 00:03:25,980
+The review priority stays routine.
 
-76
-00:04:17,021 --> 00:04:20,400
-And review priority stays routine for an unconfirmed signal.
+64
+00:03:26,980 --> 00:03:30,076
+And nothing is guessed: bad input is refused.
 
-77
-00:04:20,900 --> 00:04:24,424
-Nothing is guessed: bad coordinates are refused.
+65
+00:03:31,220 --> 00:03:34,675
+The Gemini safeguards: a fixed tool list for each agent,
 
-78
-00:04:25,380 --> 00:04:28,583
-The Gemini safeguards: a tool allowlist per agent,
+66
+00:03:34,675 --> 00:03:38,623
+scope locked to the request, patient details kept on our server,
 
-79
-00:04:28,583 --> 00:04:32,747
-scope locked to the request, patient details bound on the server,
+67
+00:03:38,623 --> 00:03:40,412
+and limits on calls and time.
 
-80
-00:04:32,747 --> 00:04:34,669
-and a call budget and timeout.
-
-81
-00:04:34,669 --> 00:04:38,256
-Whatever the model does, the assessment stays identical.
-
-82
-00:04:39,300 --> 00:04:43,244
+68
+00:03:41,540 --> 00:03:45,485
 PathoStream EHR: warn the doctor before the patients arrive.
 
-83
-00:04:43,244 --> 00:04:45,808
-A research prototype on synthetic data,
+69
+00:03:45,485 --> 00:03:48,050
+A research prototype on simulated data,
 
-84
-00:04:45,808 --> 00:04:50,212
-not a medical device, backed by a fourteen-hazard safety case where
+70
+00:03:48,050 --> 00:03:51,666
+not a medical device, with a fourteen-risk safety file,
 
-85
-00:04:50,212 --> 00:04:53,367
-every implemented control has an automated test.
+71
+00:03:51,666 --> 00:03:53,770
+and every safety control tested.
 
-86
-00:04:53,367 --> 00:04:54,025
+72
+00:03:53,770 --> 00:03:54,428
 Thank you.
 

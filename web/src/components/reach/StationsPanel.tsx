@@ -38,13 +38,13 @@ const PILL: Record<Tone, string> = {
 const DOT: Record<Tone, string> = { healthy: 'bg-healthy', warning: 'bg-warning', critical: 'bg-critical' }
 
 function statusOf(state: StationState | undefined, t: EarlyWarningState | undefined): { label: string; tone: Tone } {
-  if (t?.autoEscalated) return { label: 'Escalated', tone: 'critical' }
+  if (t?.autoEscalated) return { label: 'Auto-flagged', tone: 'critical' }
   if (state?.flagged) {
     return state.confirmedVia === 'statistical-detection'
-      ? { label: 'Escalated', tone: 'critical' }
+      ? { label: 'Auto-flagged', tone: 'critical' }
       : { label: 'Confirmed', tone: 'critical' }
   }
-  if (t?.latest?.outOfControl) return { label: 'Anomaly', tone: 'warning' }
+  if (t?.latest?.outOfControl) return { label: 'Unusual', tone: 'warning' }
   return { label: 'Normal', tone: 'healthy' }
 }
 
@@ -103,7 +103,7 @@ export function StationsPanel({
                 <button
                   type="button"
                   onClick={() => (t?.eventInjected ? onClear(station.id) : onInject(station.id))}
-                  title="Test: simulate a rising-turbidity trend here. The EWMA detector notices it and auto-escalates after 6 consecutive out-of-control readings."
+                  title="Test: make the water here get cloudier over time. The trend check (EWMA) notices and flags the station automatically after 6 unusual readings in a row."
                   className={clsx(BUTTON, 'w-[104px]', t?.eventInjected ? BUTTON_ACTIVE : BUTTON_IDLE)}
                 >
                   {t?.eventInjected ? 'Stop anomaly' : 'Inject anomaly'}

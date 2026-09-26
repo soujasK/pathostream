@@ -21,7 +21,7 @@ export function StatusHero({ stations, worst, networkLabel }: StatusHeroProps) {
 
   const eqrBadge = worst && (
     <div className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-center backdrop-blur-sm">
-      <div className="text-[10px] font-semibold tracking-wide text-white/60 uppercase">WFD class</div>
+      <div className="text-[10px] font-semibold tracking-wide text-white/60 uppercase">Water quality</div>
       <div className="text-lg font-bold text-white">{worst.wfd.eqrClass}</div>
     </div>
   )
@@ -48,19 +48,21 @@ export function StatusHero({ stations, worst, networkLabel }: StatusHeroProps) {
                   {networkLabel} &middot; active exposure
                 </div>
                 <h2 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                  Confirmed exposure at {nameOf(stations, worst!.stationId)}
+                  {worst!.isOwnFlag && worst!.confirmedVia === 'statistical-detection'
+                    ? `Possible contamination at ${nameOf(stations, worst!.stationId)} (not confirmed)`
+                    : `Confirmed exposure at ${nameOf(stations, worst!.stationId)}`}
                 </h2>
                 <p className="mt-1 text-sm text-white/65">
                   {worst!.isOwnFlag
                     ? worst!.confirmedVia === 'statistical-detection'
-                      ? 'Auto-escalated from a sustained turbidity anomaly'
+                      ? 'Flagged automatically: water cloudiness kept rising. Not confirmed by sampling.'
                       : 'Reported as confirmed contamination'
-                    : `Plume from ${nameOf(stations, worst!.sourceStationId)} is passing now`}
+                    : `Contamination from ${nameOf(stations, worst!.sourceStationId)} is passing now`}
                 </p>
               </div>
               <div className="flex shrink-0 items-end gap-5">
                 <div>
-                  <div className="text-[11px] font-semibold tracking-wide text-white/50 uppercase">Elapsed</div>
+                  <div className="text-[11px] font-semibold tracking-wide text-white/50 uppercase">Since alert</div>
                   <div className="text-3xl font-bold tabular-nums text-critical">{formatDuration(worst!.elapsedMinutes)}</div>
                 </div>
                 {eqrBadge}
@@ -77,7 +79,7 @@ export function StatusHero({ stations, worst, networkLabel }: StatusHeroProps) {
               <div>
                 <div className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.18em] text-warning uppercase">
                   <span className="h-2 w-2 rounded-full bg-warning" />
-                  {networkLabel} &middot; plume predicted
+                  {networkLabel} &middot; contamination expected
                 </div>
                 <h2 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
                   Contamination predicted to reach {nameOf(stations, worst!.stationId)}

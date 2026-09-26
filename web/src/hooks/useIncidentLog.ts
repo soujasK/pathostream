@@ -89,7 +89,7 @@ export function useIncidentLog(snapshots: CatchmentSnapshot[], telemetry: EarlyW
             ...base,
             severity: 'critical',
             message: viaStatistics
-              ? `Sustained anomaly at ${name} auto-escalated to confirmed contamination -- the statistical early-warning system caught this before any operator report.`
+              ? `Water cloudiness at ${name} kept rising, so it was flagged automatically -- before anyone reported it. Not confirmed by sampling.`
               : `Confirmed contamination reported at ${name}.`,
           })
         } else if (current === 'predicted') {
@@ -97,16 +97,16 @@ export function useIncidentLog(snapshots: CatchmentSnapshot[], telemetry: EarlyW
           additions.push({
             ...base,
             severity: 'warning',
-            message: `Downstream arrival predicted at ${name}, propagating from ${source}.`,
+            message: `Contamination from ${source} is expected to reach ${name}.`,
           })
         } else if (current === 'confirmed' && previous !== undefined) {
           additions.push({
             ...base,
             severity: 'critical',
-            message: `Predicted plume has now arrived at ${name} -- active exposure window.`,
+            message: `Contamination has now reached ${name}.`,
           })
         } else if (current === 'cleared') {
-          additions.push({ ...base, severity: 'info', message: `Exposure window at ${name} has cleared.` })
+          additions.push({ ...base, severity: 'info', message: `Contamination has passed ${name}.` })
         }
         previousPhaseRef.current.set(key, current)
       }
@@ -127,7 +127,7 @@ export function useIncidentLog(snapshots: CatchmentSnapshot[], telemetry: EarlyW
           timestamp: now,
           catchmentLabel: label,
           severity: 'warning',
-          message: `Statistical early-warning system flagged a turbidity anomaly at ${name}.`,
+          message: `Trend check: unusual water cloudiness at ${name}.`,
         })
         narratedFlagRef.current.set(t.stationId, true)
       } else if (narrated && run === 0) {
@@ -141,8 +141,8 @@ export function useIncidentLog(snapshots: CatchmentSnapshot[], telemetry: EarlyW
           catchmentLabel: label,
           severity: 'info',
           message: hadEscalated
-            ? `Turbidity at ${name} has returned to its normal statistical range.`
-            : `Turbidity at ${name} returned to normal before the escalation threshold -- correctly not escalated.`,
+            ? `Water cloudiness at ${name} is back to normal.`
+            : `Water cloudiness at ${name} went back to normal before it needed flagging.`,
         })
         narratedFlagRef.current.set(t.stationId, false)
       }
